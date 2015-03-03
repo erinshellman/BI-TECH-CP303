@@ -1,0 +1,307 @@
+---
+title: "Introduction to R"
+author: "Erin Shellman"
+date: "April 6, 2015"
+output: html_document
+---
+
+## Preparation 
+
+Exploratory data analysis is a crucial first step of any task involving data, 
+and it's a perfect way to get acquainted with our tools.  This notebook is a 
+guide for helping you get started using R.  Does this notebook give you every 
+detail you need to run your analyses in R?  No, it is incomplete, but I will try
+to introduce new concepts and functions only as they become needed.  For those 
+who are new to R, new to working with data, new to programming, or all three 
+please keep in mind:
+
+> Whenever you’re learning a new tool, for a long time you’re going to suck… 
+> But the good news is that is typical, that’s something that happens to everyone, 
+> and it’s only temporary.
+
+That's advice [from Hadley Wickham](http://www.r-bloggers.com/hadley-wickhams-dplyr-tutorial-at-user-2014-part-1/), 
+a statistician and software developer who has revolutionized the way that people 
+use R.  We're going to use a lot of his software in this class.
+
+#### Loading libraries
+
+One of the greatest strengths of R is the active community.  We're going to use
+a handful of packages (or libraries) in this class.  Today we'll learn about
+two, `dplyr` and `ggplot2`.
+
+```{r, message = FALSE}
+# Install the packages if you don't have them already.
+# install.packages('dplyr')
+# install.packages('ggplot2')
+
+# Then load them up.
+library(dplyr)
+library(ggplot2)
+```
+
+#### Loading data
+
+To start getting acquainted, we'll use on of R's many 
+[preloaded datasets](http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html) 
+called `swiss`.  Loading it up for use is super simple.
+
+```{r}
+data(swiss)
+```
+
+Most of the time you won't be using R's built-in data sets, you want to work 
+with your own!  There are lots of ways to load data into R, but in this class 
+you can get away with just this:
+
+```{r, eval = FALSE}
+# Set you working directory, which is normally where you data are.
+setwd('path/to/your/data')
+data = read.delim('data.txt',
+                  header = TRUE, 
+                  sep = '\t')
+```
+
+Type `?read.delim` to learn what the `header` and `sep` arguments do.
+
+Once data are loaded, there are tons of ways to spot-check it.
+
+```{r} 
+dim(swiss) # print dimensions
+names(swiss)
+str(swiss)
+head(swiss, 3)
+tail(swiss, 3)
+summary(swiss)
+plot(swiss)
+```
+
+## R Basics
+
+R has many data types including lists, matrices, tables and dataframes.  We'll 
+be working primarily with dataframes in this class.  Dataframes should be 
+familiar and can be thought of as a spreadsheet view were columns are typically
+your variable and rows are observations.
+
+#### Variable types
+* factors - categories, emphasize importance for plotting.
+* numeric
+
+Vectors are one-dimensional data types that contain data of the same type.  For example `age = c(18, 30, 27, 59)` is a numeric vector and 
+`relationship = c('sister', 'aunt', 'nephew')` is a vector of strings.
+
+#### Getting help
+
+You can access the documentation for any function in R by typing `help(lm)` or 
+`?(lm)`.  The help files conform to a standard format so that they're easy 
+to navigate.  Most likely you'll make use of *usage*, *arguments*, *value* and 
+*examples* sections when exploring how to use a function.
+
+Sometimes it's faster and easier to get help with Google and I increasingly use
+Google before using the built-in documentation.  Part of my typical workflow is 
+typing questions literally into Google, with a few specifics about
+the language of the solution I'm looking for.  For example, "R ggplot2 how to 
+change legend font size" returns the following top 3 links:
+
+1. [Cookbook for R » Legends (ggplot2)](http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/) 
+2. [r - increase legend font size ggplot2 - Stack Overflow](http://stackoverflow.com/questions/20407773/increase-legend-font-size-ggplot2)
+3. [theme. ggplot2 0.9.2.1](http://docs.ggplot2.org/0.9.2.1/theme.html)
+
+all of which answer the question quickly.  The first link is worth bookmarking. 
+It shows actual plots that make it easy to find an example that looks like what 
+I want and see the code. The second is another phenonemal resource 
+called Stackoverflow that is a public forum for asking programming questions and
+getting answers.  I use this website probably over 50 times a day, and I bet you
+will too.  The last link is the ggplot2 documentation that lists all the 
+arguments in the `theme()` element, one of which is `legend.text`.  If you feel 
+like you're getting stuck on something don't spin your wheels, just start 
+typing the problem into Google and you might be surprised at how easy it is to 
+find solutions.
+
+* http://www.statmethods.net/
+* http://adv-r.had.co.nz/
+* http://adv-r.had.co.nz/Style.html
+* http://www.cookbook-r.com/
+* http://stackoverflow.com/questions/tagged/r-faq%20
+
+#### Slicing and dicing
+
+There are many ways to index into a dataframe.  Dataframes are indexed like
+`df[row, col]`.  Leaving either the `row` or `col` element blank tells R to take
+all rows, or all columns.
+
+```{r}
+# grab a column by name and assign to edu
+edu = swiss[15:20 , 'Education']
+print(edu)
+# or use the $ to grab the whole column
+edu = swiss$Education
+head(edu)
+
+#subset() demo
+```
+
+## Graphics
+
+In virtually any setting graphics are going to be the best, most compelling way
+of communicating results to your customer.  At the exploratory stage of our 
+analysis we're going to generate numerous, relatively low-fidelity figures to 
+help us understand the domain as analysts and to guide our subsequent analyses.
+During the exploratory phase, we want to be able to generate sensible figures
+quickly without fretting over details, however **axes should always be labeled**.
+
+Some graphics tips: 
+* Highlight comparisons
+* Show causality
+* Show as much data on a single plot as possible - multivariate data 
+  - can do that with faceting, color, shape, size
+* Integrate evidence - text, numbers, images
+
+Plots to choose from
+* Box plots (1D)
+* Histograms / Density plots (1D)
+* Bar plots (1D)
+* Scatter plots (2D)
+* Facets (2D)
+
+Histogram with a rug! http://docs.ggplot2.org/0.9.2.1/geom_rug.html
+
+Things to show
+* Adding lines and annotation for clarity
+* Facet_wrap - discuss factors
+* Fills and color
+* show geom_density
+* smoother
+* an example of some automation of figure generation?
+
+#### Visualization with `ggplot2`
+
+R has three core plotting systems, `base`, `lattice` and `ggplot2`.
+In this course we're going to use a plotting library called `ggplot2` because I 
+think it produces the best plots, and uses a syntax that is more consistent and 
+reusable than base R graphics.
+
+If you're familiar with R's `base` graphics then 
+[qplot()](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
+free to read up on `qplot()` and its uses, but we're going to focus primarily on
+the `ggplot` function for constructing graphics.
+
+```{r, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
+qplot(Fertility, Education, data = swiss)
+```
+
+Plots in `ggplot2` are made up of *aesthetics* and *geoms*.
+
+The components of a `ggplot` are
+* input data
+* aesthetic mappings
+* geoms
+* facets - optional
+* stats
+* scales
+* coordinate system
+
+Every ggplot starts with a line like this:
+  `ggplot(dataframe, aes(x = var1, y = var2, ...))` 
+that maps data onto x and y dimensions for our plot, yet to be defined.
+
+```{r, fig.width = 4, fig.height = 3}
+# scatter plot
+ggplot(swiss, aes(x = Catholic, y = Fertility)) +
+  # data mapping
+  geom_point() + # draw a scatter plot
+  # plot labeling
+  scale_x_continuous('Catholic (%)') +
+  scale_y_continuous('Fertility') + 
+  # theme elements
+  ggtitle('Are Catholics more Fertile?') + 
+  theme_minimal() + # simpler colors. how does it look if you remove it?
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+```
+
+Think of ggplots as being built up as layers. First we map the variables with 
+the ggplot statement, then we tell ggplot what type of plot to make 
+(e.g. scatter, histogram, bar plot, etc).  Finally, we can layer on nice labels, 
+colors and annotation.  I highly recommend having this page up when plotting: 
+<http://docs.ggplot2.org/>
+
+```{r, fig.width = 4, fig.height = 3}
+# histogram
+ggplot(swiss, aes(x = Catholic)) +
+  # data mapping
+  geom_histogram(fill = 'steelblue') + # 
+  # plot labeling
+  scale_x_continuous('Catholic') +
+  scale_y_continuous('Counts') + 
+  # theme elements
+  ggtitle("What's the distribution of Catholics?") + 
+  theme_minimal() + 
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+```
+
+See how much of that code we were able to reuse?
+
+#### Aesthetics 
+
+When you want to change a feature of you figure based on the value of another 
+variable, you use aesthetics. Unlike the histogram above, where we could specify
+the color explicitly in the *geom()*, when the color depends on the value of a
+variable, it goes inside `aes()`.
+
+```{r}
+# bubble plot
+ggplot(swiss, aes(x = Catholic, y = Fertility, size = Infant.Mortality)) +
+  # data mapping
+  geom_point() + # draw a scatter plot
+  # plot labeling
+  scale_x_continuous('Catholic (%)') +
+  scale_y_continuous('Fertility') + 
+  # theme elements
+  ggtitle('Are Catholics more Fertile?') + 
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+```
+
+#### Annotation
+
+Annotation on a figure can add clarity and help the audience understand the 
+message.  A lot of these features are not necessary for exploratory analyses,
+but can be very helpful for communicating final results.
+
+* xlab, ylab, labs, ggtitle, annotate, themes
+
+swiss$is_catholic = ifelse(swiss$Catholic > 80, 'Catholic', 'Protestant')
+table(swiss$is_catholic)
+
+# boxplot
+ggplot(swiss, aes(x = rownames(swiss), y = Fertility)) +
+  # data mapping
+  geom_box plot() + 
+  # plot labeling
+  scale_x_continuous('Catholic') +
+  scale_y_continuous('Counts') + 
+  # theme elements
+  ggtitle("What's the distribution of Catholics?") + 
+  theme_minimal() + 
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 17),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+    
+##
