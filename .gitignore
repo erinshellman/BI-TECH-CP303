@@ -11,3 +11,4 @@ tmp/**
 node_modules
 index.html
 .sass-cache/
+.Rproj.user
