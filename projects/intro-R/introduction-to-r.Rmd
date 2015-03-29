@@ -43,10 +43,12 @@ library(ggplot2)
 
 To start getting acquainted, we'll use one of R's many 
 [preloaded datasets](http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html) 
-called `swiss`.  Loading it up for use is super simple.
+called `diamonds`. It's a dataset containing the prices and other attributes of 
+about 54,000 diamonds. Loading it up for use is super simple.
 
 ```{r}
-data(swiss)
+help(diamonds)
+data(diamonds)
 ```
 
 Most of the time we won't be using R's built-in data sets, we want to work 
@@ -66,13 +68,12 @@ Type `?read.delim` to learn what the `header` and `sep` arguments do.
 Once data are loaded, there are tons of ways to spot-check it.
 
 ```{r} 
-dim(swiss) # print dimensions
-names(swiss)
-str(swiss)
-head(swiss, 3)
-tail(swiss, 3)
-summary(swiss)
-plot(swiss)
+dim(diamonds)    # print dimensions
+names(diamonds)
+str(diamonds)
+head(diamonds, 3)
+tail(diamonds, 3)
+summary(diamonds)
 ```
 
 ## R Basics
@@ -83,17 +84,21 @@ familiar and can be thought of as a spreadsheet view were columns are typically
 your variable and rows are observations.
 
 #### Variable types
-* factors - categories, emphasize importance for plotting.
+* factors are categorical
 * numeric 
 
-Vectors are one-dimensional data types that contain data of the same type.  For example `age = c(18, 30, 27, 59)` is a numeric vector and 
+Factors are going to be essential for plotting, and we'll talk about them in 
+more detail later on.
+
+Vectors are one-dimensional data types that contain data of the same type. 
+For example `age = c(18, 30, 27, 59)` is a numeric vector and 
 `relationship = c('sister', 'aunt', 'nephew')` is a vector of strings.
 
 #### Getting help
 
-You can access the documentation for any function in R by typing `help(function_name)` or 
+You can access documentation for any function in R by typing `help(function_name)` or 
 `?(function_name)`. The help files conform to a standard format so that they're easy 
-to navigate. The most frequently used sections in a doc file are *usage*, *arguments*, *value* and 
+to navigate. The most frequently used sections are *usage*, *arguments*, *value* and 
 *examples*. The *usage* section describes how to call the function, *arguments*
 lists all the values that can be set in the call, *value* describes what 
 information the function call will return to you, and *examples* are typically
@@ -140,39 +145,49 @@ dataframe.
 
 ```{r}
 # 1. grab a column by name and assign to edu
-edu = swiss[15:20, 'Education']
-print(edu)
+price = diamonds[15:20, 'price']
+print(price)
 
 # 2. or use the $ to grab the whole column
-edu = swiss$Education
-head(edu)
+price = diamonds$price
+head(price)
 
 # 3. we can even combine the two to get rows 15 - 20 of the Education column
-edu = swiss[15:20, ]$Education
-print(edu)
+price = diamonds[15:20, ]$price
+print(price)
 
 # 4. what if we don't know the row numbers, but we have a condition? 
-very_fertile = subset(swiss, Fertility > 80)
-print(very_fertile)
+pricey = subset(diamonds, price > 18800)
+print(pricey)
 
 # 5. select just some of the columns with dplyr's 'select' function
 library(dplyr)
-sub = select(swiss, Fertility, Education)
+sub = select(diamonds, carat, cut, price)
 head(sub)
 
 # 6. and then we can use dplyr's 'filter' to do the same subsetting we did in 3
-filtered = filter(sub, Fertility > 80)
-print(filtered)
+filtered = filter(sub, carat > 0.40)
+head(filtered)
 
 # 7. what's cool about dplyr is that you can nest those 
-select(
-  filter(swiss, Fertility > 80), 
-  Fertility, Education)
+head(
+  select(
+    filter(diamonds, carat > 0.40), 
+  carat, cut, price)
+)
 
 # 8. or, even cooler, we can use the 'pipe' notation
-swiss %>% filter(Fertility > 80) %>% select(Fertility, Education)
+filter_by_pipe = diamonds %>% filter(carat > 0.40) %>% select(carat, cut, price)
+head(filter_by_pipe)
 
 ```
+
+###### Self-check
+
+1. How many diamonds cost less than $500?
+2. How many diamonds cost less than $100?
+3. How many diamonds cost at least $15,000?
+4. What is the range of prices for diamonds of color D?
 
 ## Graphics
 
@@ -208,21 +223,12 @@ the `ggplot` function for constructing graphics.
 
 ```{r, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
 # quick scatterplot made with qplot
-qplot(Fertility, Education, data = swiss)
+qplot(carat, price, data = diamonds)
 ```
 
 Plot objects in *ggplot2* are made up of *geoms* and *aesthetics*. Geometric 
 objects, or *geoms*, describe the type of plot, *e.g.* scatter or boxplot. 
 *aesthetics* describe how to draw the plot *e.g.* color, size or location.
-
-The components of a `ggplot` are
-* input data
-* aesthetic mappings
-* geoms
-* facets - optional
-* stats
-* scales
-* coordinate system
 
 Every ggplot starts with a line like this:
   `ggplot(dataframe, aes(x = var1, y = var2, ...))` 
@@ -230,14 +236,14 @@ that maps data onto x and y dimensions for our plot, yet to be defined.
 
 ```{r, fig.width = 4, fig.height = 3}
 # scatter plot
-ggplot(swiss, aes(x = Catholic, y = Fertility)) +
+ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
   geom_point() + # draw a scatter plot
   # plot labeling
-  scale_x_continuous('Catholic (%)') +
-  scale_y_continuous('Fertility') + 
+  scale_x_continuous('Carat') +
+  scale_y_continuous('Price (USD)') + 
   # theme elements
-  ggtitle('Are Catholics more Fertile?') + 
+  ggtitle('Are higher carat more expensive?') + 
   theme_minimal() + # simpler colors. how does it look if you remove it?
   theme(
     axis.text.x = element_text(size = 13),
@@ -247,22 +253,22 @@ ggplot(swiss, aes(x = Catholic, y = Fertility)) +
     axis.ticks = element_blank())
 ```
 
-Think of ggplots as being built up as layers. First we map the variables with 
-the ggplot statement, then we tell ggplot what type of plot to make 
+Think of *ggplot*s as being built up as layers. First we map the variables with 
+the `ggplot` statement, then we tell ggplot what type of plot to make 
 (e.g. scatter, histogram, bar plot, etc).  Finally, we can layer on nice labels, 
 colors and annotation.  I highly recommend having this page up when plotting: 
 <http://docs.ggplot2.org/>
 
 ```{r, fig.width = 4, fig.height = 3}
 # histogram
-ggplot(swiss, aes(x = Catholic)) +
+ggplot(diamonds, aes(x = price)) +
   # data mapping
   geom_histogram(fill = 'steelblue') + # 
   # plot labeling
-  scale_x_continuous('Catholic') +
+  scale_x_continuous('Price') +
   scale_y_continuous('Counts') + 
   # theme elements
-  ggtitle("What's the distribution of Catholics?") + 
+  ggtitle("What's the distribution of prices?") + 
   theme_minimal() + 
   theme(
     axis.text.x = element_text(size = 13),
@@ -282,15 +288,14 @@ the color explicitly in the *geom()*, when the color depends on the value of a
 variable, it goes inside `aes()`.
 
 ```{r}
-# bubble plot
-ggplot(swiss, aes(x = Catholic, y = Fertility, size = Infant.Mortality)) +
+ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
-  geom_point() + # draw a scatter plot
+  geom_point(aes(color = factor(color)), alpha = 0.40) + # draw a scatter plot
   # plot labeling
-  scale_x_continuous('Catholic (%)') +
-  scale_y_continuous('Fertility') + 
+  scale_x_continuous('Carat') +
+  scale_y_continuous('Price (USD)') +
+  scale_color_discrete('Color') + # legend title
   # theme elements
-  ggtitle('Are Catholics more Fertile?') + 
   theme_minimal() +
   theme(
     axis.text.x = element_text(size = 13),
@@ -300,37 +305,106 @@ ggplot(swiss, aes(x = Catholic, y = Fertility, size = Infant.Mortality)) +
     axis.ticks = element_blank())
 ```
 
+#### Factors
+
+We used a new function called `factor` in the plot above to describe how to 
+color the points. A `factor` is a variable type in R that represents 
+categorical data, in this case the color of a diamond. Factor variables are 
+very handy in *ggplot2* because they allow us to quickly change color, shape,
+facet and many other graphical features by the value of a category. Let's try it
+with facets.
+
+#### Faceting 
+
+Our colorful carat plot looks pretty good, but there are a lot of points laying 
+on top of each other. When you want to compare plots across groups separately 
+you can use a *facet* to split the figure up by category.
+
+```{r}
+ggplot(diamonds, aes(x = carat, y = price)) +
+  # data mapping
+  geom_point(alpha = 0.30) + # draw a scatter plot
+  geom_smooth(method = 'lm') + 
+  facet_wrap(~ cut) +
+  # plot labeling
+  scale_x_continuous('Carat') +
+  scale_y_continuous('Price (USD)') +
+  scale_color_discrete('Color') + # legend title
+  # theme elements
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+```
+
+Now we can view every grouping individually. Notice how we were able to add a 
+smoother to the plot and `facet_wrap` elegantly applied it to each sub-plot.
+How about with barplots?
+
+```{r}
+ggplot(diamonds, aes(clarity, fill = factor(cut))) + 
+  geom_bar() +
+  facet_wrap(~ cut) +     
+  # plot labeling
+  scale_x_discrete('Clarity') +
+  scale_y_continuous('Count') +
+  scale_fill_discrete('Cut') + # legend title
+  # theme elements
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 6),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+```
+
 #### Annotation
 
 Annotation on a figure can add clarity and help the audience understand the 
 message.  A lot of these features are not necessary for exploratory analyses,
-but can be very helpful for communicating final results.
+but can be very helpful for communicating final results. For example, suppose 
+we're interested in characterizing the joint distributions of carats and cuts.
+These distributions are bumping and highly left-skewed, so it's difficult to
+assertain the mean without further annotation.
 
-* xlab, ylab, labs, ggtitle, annotate, themes
+```{r}
+carat_summary = diamonds %>% group_by(cut) %>% summarize(carat_mean = round(mean(carat), 2))
 
-swiss$is_catholic = ifelse(swiss$Catholic > 80, 'Catholic', 'Protestant')
-table(swiss$is_catholic)
-
-# boxplot
-ggplot(swiss, aes(x = rownames(swiss), y = Fertility)) +
-  # data mapping
-  geom_box plot() + 
+ggplot(diamonds, aes(x = factor(cut), y = carat)) +
+  geom_violin(fill = "grey80", colour = "#3366FF") +
+  geom_text(data = carat_summary, aes(label = carat_mean, x = cut, y = carat_mean)) +
+  geom_hline(yintercept = range(carat_summary$carat_mean), alpha = 0.4, linetype = 2) +
+  coord_flip() +
   # plot labeling
-  scale_x_continuous('Catholic') +
-  scale_y_continuous('Counts') + 
+  scale_x_discrete('Cut') +
+  scale_y_continuous('Carat') +
+  scale_fill_discrete('Cut') + # legend title
   # theme elements
-  ggtitle("What's the distribution of Catholics?") + 
-  theme_minimal() + 
+  theme_minimal() +
   theme(
     axis.text.x = element_text(size = 13),
     axis.text.y = element_text(size = 13),
-    title = element_text(size = 17),
+    title = element_text(size = 12),
     axis.title = element_text(size = 15),
     axis.ticks = element_blank())
+```
+
+Ignoring the quick aggregation we did for now, we used `geom_text` to write the
+mean carat of each cut on top of the violin plot. Also we drew the range of those
+means using `geom_hline` which lets us quickly assess the spread in means. We'll
+talk about that cool aggregation step in detail in the next section.
+
+###### Self-check
+
+1. Spend some time exploring the [ggplot2 docs](http://docs.ggplot2.org/current/)
+and try out some new figures. What did you learn from your figure?
     
 ## Exploratory data analysis
 
-The *swiss* dataset was a good warm-up, but let's dive into data we'll be 
+The *diamonds* dataset was a good warm-up, but let's dive into data we'll be 
 working with for the first three weeks of class.  The data are from a bike
 share program in Washington D.C., and are split into two files. The first file 
 called *usage_2012.tsv* is large and contains each rental event as well as
