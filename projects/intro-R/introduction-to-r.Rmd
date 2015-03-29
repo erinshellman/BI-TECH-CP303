@@ -7,11 +7,10 @@ output: html_document
 
 ## Preparation 
 
-Exploratory data analysis is a crucial first step of any task involving data, 
+Exploratory data analysis is a crucial first step in any task involving data, 
 and it's a perfect way to get acquainted with our tools.  This notebook is a 
-guide for helping you get started using R.  Does this notebook give you every 
-detail you need to run your analyses in R?  No, it is incomplete, but I will try
-to introduce new concepts and functions only as they become needed.  For those 
+guide for helping you get started using R.  It is incomplete, but I will try
+to introduce new concepts and functions as they become needed.  For those 
 who are new to R, new to working with data, new to programming, or all three 
 please keep in mind:
 
@@ -19,9 +18,10 @@ please keep in mind:
 > But the good news is that is typical, that’s something that happens to everyone, 
 > and it’s only temporary.
 
-That's advice [from Hadley Wickham](http://www.r-bloggers.com/hadley-wickhams-dplyr-tutorial-at-user-2014-part-1/), 
+That's advice from [Hadley Wickham](http://www.r-bloggers.com/hadley-wickhams-dplyr-tutorial-at-user-2014-part-1/), 
 a statistician and software developer who has revolutionized the way that people 
-use R.  We're going to use a lot of his software in this class.
+analyze data with R. We're going to learn to use many of his packages in this 
+class, you'll be a pro at R in no time.
 
 #### Loading libraries
 
@@ -31,8 +31,8 @@ two, `dplyr` and `ggplot2`.
 
 ```{r, message = FALSE}
 # Install the packages if you don't have them already.
-# install.packages('dplyr')
-# install.packages('ggplot2')
+#install.packages('dplyr')
+#install.packages('ggplot2')
 
 # Then load them up.
 library(dplyr)
@@ -41,7 +41,7 @@ library(ggplot2)
 
 #### Loading data
 
-To start getting acquainted, we'll use on of R's many 
+To start getting acquainted, we'll use one of R's many 
 [preloaded datasets](http://stat.ethz.ch/R-manual/R-devel/library/datasets/html/00Index.html) 
 called `swiss`.  Loading it up for use is super simple.
 
@@ -49,8 +49,8 @@ called `swiss`.  Loading it up for use is super simple.
 data(swiss)
 ```
 
-Most of the time you won't be using R's built-in data sets, you want to work 
-with your own!  There are lots of ways to load data into R, but in this class 
+Most of the time we won't be using R's built-in data sets, we want to work 
+with our own!  There're lots of ways to load data into R, but in this class 
 you can get away with just this:
 
 ```{r, eval = FALSE}
@@ -84,17 +84,20 @@ your variable and rows are observations.
 
 #### Variable types
 * factors - categories, emphasize importance for plotting.
-* numeric
+* numeric 
 
 Vectors are one-dimensional data types that contain data of the same type.  For example `age = c(18, 30, 27, 59)` is a numeric vector and 
 `relationship = c('sister', 'aunt', 'nephew')` is a vector of strings.
 
 #### Getting help
 
-You can access the documentation for any function in R by typing `help(lm)` or 
-`?(lm)`.  The help files conform to a standard format so that they're easy 
-to navigate.  Most likely you'll make use of *usage*, *arguments*, *value* and 
-*examples* sections when exploring how to use a function.
+You can access the documentation for any function in R by typing `help(function_name)` or 
+`?(function_name)`. The help files conform to a standard format so that they're easy 
+to navigate. The most frequently used sections in a doc file are *usage*, *arguments*, *value* and 
+*examples*. The *usage* section describes how to call the function, *arguments*
+lists all the values that can be set in the call, *value* describes what 
+information the function call will return to you, and *examples* are typically
+self-contained chunks of code that you can copy and paste into the console.
 
 Sometimes it's faster and easier to get help with Google and I increasingly use
 Google before using the built-in documentation.  Part of my typical workflow is 
@@ -106,12 +109,12 @@ change legend font size" returns the following top 3 links:
 2. [r - increase legend font size ggplot2 - Stack Overflow](http://stackoverflow.com/questions/20407773/increase-legend-font-size-ggplot2)
 3. [theme. ggplot2 0.9.2.1](http://docs.ggplot2.org/0.9.2.1/theme.html)
 
-all of which answer the question quickly.  The first link is worth bookmarking. 
+all of which answer the question.  The first link is worth bookmarking. 
 It shows actual plots that make it easy to find an example that looks like what 
-I want and see the code. The second is another phenonemal resource 
+I want and see the code. The second is another phenomenal resource 
 called Stackoverflow that is a public forum for asking programming questions and
 getting answers.  I use this website probably over 50 times a day, and I bet you
-will too.  The last link is the ggplot2 documentation that lists all the 
+will too.  The last link is the *ggplot2* documentation that lists all the 
 arguments in the `theme()` element, one of which is `legend.text`.  If you feel 
 like you're getting stuck on something don't spin your wheels, just start 
 typing the problem into Google and you might be surprised at how easy it is to 
@@ -123,62 +126,80 @@ find solutions.
 * http://www.cookbook-r.com/
 * http://stackoverflow.com/questions/tagged/r-faq%20
 
+Finally, ask your classmates! In a analyst position in the real world you won't
+be working alone. If you're stuck, chances are that your classmates are too.
+Even if not, sometimes getting a fresh set of eyes on your code is all you need
+to find little bugs. Help each other out!
+
 #### Slicing and dicing
 
 There are many ways to index into a dataframe.  Dataframes are indexed like
 `df[row, col]`.  Leaving either the `row` or `col` element blank tells R to take
-all rows, or all columns.
+all rows, or all columns. Here's a handful of ways we can slice and dice a 
+dataframe.
 
 ```{r}
-# grab a column by name and assign to edu
-edu = swiss[15:20 , 'Education']
+# 1. grab a column by name and assign to edu
+edu = swiss[15:20, 'Education']
 print(edu)
-# or use the $ to grab the whole column
+
+# 2. or use the $ to grab the whole column
 edu = swiss$Education
 head(edu)
 
-#subset() demo
+# 3. we can even combine the two to get rows 15 - 20 of the Education column
+edu = swiss[15:20, ]$Education
+print(edu)
+
+# 4. what if we don't know the row numbers, but we have a condition? 
+very_fertile = subset(swiss, Fertility > 80)
+print(very_fertile)
+
+# 5. select just some of the columns with dplyr's 'select' function
+library(dplyr)
+sub = select(swiss, Fertility, Education)
+head(sub)
+
+# 6. and then we can use dplyr's 'filter' to do the same subsetting we did in 3
+filtered = filter(sub, Fertility > 80)
+print(filtered)
+
+# 7. what's cool about dplyr is that you can nest those 
+select(
+  filter(swiss, Fertility > 80), 
+  Fertility, Education)
+
+# 8. or, even cooler, we can use the 'pipe' notation
+swiss %>% filter(Fertility > 80) %>% select(Fertility, Education)
+
 ```
 
 ## Graphics
 
-In virtually any setting graphics are going to be the best, most compelling way
-of communicating results to your customer.  At the exploratory stage of our 
-analysis we're going to generate numerous, relatively low-fidelity figures to 
-help us understand the domain as analysts and to guide our subsequent analyses.
-During the exploratory phase, we want to be able to generate sensible figures
+Visuals are the most compelling way to communicate results. At the 
+exploratory stage, we generate numerous, relatively low-fidelity figures that
+help familiarize the analyst with new data and guide subsequent analyses.
+During the exploratory phase, the goal is to generate sensible figures
 quickly without fretting over details, however **axes should always be labeled**.
 
-Some graphics tips: 
+Statistician and artist [Edward Tufte](http://www.edwardtufte.com/tufte/) has 
+canonized some fundamental graphics tips to keep in mind as you create your
+figures: 
+
 * Highlight comparisons
 * Show causality
-* Show as much data on a single plot as possible - multivariate data 
-  - can do that with faceting, color, shape, size
-* Integrate evidence - text, numbers, images
+* Show as much as possible. We'll explore faceting, color, shape, size as 
+method to do this.
+* Integrate evidence. Where appropriate, include text, numbers, images but only to 
+the extent that they enhance the visualization's narrative.
+* Figures **always** have labeled axes!! (ok, this one is mine.)
 
-Plots to choose from
-* Box plots (1D)
-* Histograms / Density plots (1D)
-* Bar plots (1D)
-* Scatter plots (2D)
-* Facets (2D)
+#### Visualization with *ggplot2*
 
-Histogram with a rug! http://docs.ggplot2.org/0.9.2.1/geom_rug.html
-
-Things to show
-* Adding lines and annotation for clarity
-* Facet_wrap - discuss factors
-* Fills and color
-* show geom_density
-* smoother
-* an example of some automation of figure generation?
-
-#### Visualization with `ggplot2`
-
-R has three core plotting systems, `base`, `lattice` and `ggplot2`.
-In this course we're going to use a plotting library called `ggplot2` because I 
-think it produces the best plots, and uses a syntax that is more consistent and 
-reusable than base R graphics.
+R has three core plotting systems, *base*, *lattice* and *ggplot2*.
+In this course we'll use the plotting library *ggplot2* because it 
+combines the best parts of the other two plotting systems and uses a consistent 
+syntax that makes plot code intuitive and reusable.
 
 If you're familiar with R's `base` graphics then 
 [qplot()](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
@@ -186,10 +207,13 @@ free to read up on `qplot()` and its uses, but we're going to focus primarily on
 the `ggplot` function for constructing graphics.
 
 ```{r, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
+# quick scatterplot made with qplot
 qplot(Fertility, Education, data = swiss)
 ```
 
-Plots in `ggplot2` are made up of *aesthetics* and *geoms*.
+Plot objects in *ggplot2* are made up of *geoms* and *aesthetics*. Geometric 
+objects, or *geoms*, describe the type of plot, *e.g.* scatter or boxplot. 
+*aesthetics* describe how to draw the plot *e.g.* color, size or location.
 
 The components of a `ggplot` are
 * input data
@@ -304,4 +328,109 @@ ggplot(swiss, aes(x = rownames(swiss), y = Fertility)) +
     axis.title = element_text(size = 15),
     axis.ticks = element_blank())
     
-##
+## Exploratory data analysis
+
+The *swiss* dataset was a good warm-up, but let's dive into data we'll be 
+working with for the first three weeks of class.  The data are from a bike
+share program in Washington D.C., and are split into two files. The first file 
+called *usage_2012.tsv* is large and contains each rental event as well as
+hourly weather information. The second file, called *stations.tsv* contains 
+geographical data about the stations like lat/long as well as counts of nearby
+amenities and road features. Let's go through a quick exploratory data analysis 
+of the usage data and touch on tips that will be useful for your first project.
+
+```{r}
+setwd('~/projects/BI-TECH-CP303/projects/project 1')
+usage = read.delim('./data/capital-bike-share/usage_2012_subset.tsv',
+                   sep = '\t',
+                   header = TRUE)
+head(usage)
+str(usage)
+
+```
+
+Spend some time looking the data over and getting a sense for what types of 
+information are available. When I scan over a dataset I create small hypotheses 
+in my mind and think about the data I'd need to disprove them. For example, 
+*is_holiday*... something. 
+
+The data are basically ready to go (*you're welcome*), but lets use the 
+*lubridate* package to convert our timestamps to date objects so that we can 
+use lots of convenient functions and do convenient things like subtract dates.
+
+```{r}
+library(lubridate)
+
+is(usage$time_start) # time_start is a factor
+
+usage$time_start = ymd_hms(usage$time_start)
+usage$time_end = ymd_hms(usage$time_end)
+
+is(usage$time_start) # And now it's POSIXct (a date)
+```
+
+We can use `head(usage)` to start inspecting the data. We have a bike id, start 
+and end times and locations, customer type and lots of data about the season and
+the weather. Let's start exploring and see if we can make any preliminary 
+observations.
+
+```{r}
+# How many unique bikes are there?
+length(unique(usage$bike_id))
+
+# How many unique stations are there?
+length(unique(usage$station_start))
+
+# What's the temperature distribution like?
+summary(usage$temp)
+ggplot(usage, aes(x = temp)) +
+  geom_density() +
+  theme_bw()
+
+ggplot(usage, aes(x = humidity)) +
+  geom_density() +
+  theme_bw()
+```
+
+This is great, but it's going to take us forever to start discovering patterns 
+like this. Fortunately we can use the `ggpairs` function in the *GGally* package 
+to plot continuous variables all at once.
+
+```{r}
+library(GGally)
+ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed')])
+```
+
+This is great, but believe it or not we can do better. We can customize the 
+upper and lower quadrants and the diagonal. Let's make scatter plots with a 
+linear smoother on the lower half, correlation values on the upper half, and
+bar plots on the diagonal. Spend some time staring at the plot and making sure you 
+understand how it's read.
+
+#```{r}
+ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed')],
+        lower = list(continuous = 'smooth', params = c(colour = 'blue')),
+        diag = list(continuous = 'bar', params = c(colour = 'blue')), 
+        upper = list(params = list(corSize = 6)), axisLabels = 'show')
+
+ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed', 'season')],
+        lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.50)),
+        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.80)), 
+        upper = list(continuous = 'cor', combo = 'facetdensity'),
+        axisLabels = 'show', color = 'season')
+```
+
+Immediately we can see that there's a strong linear relationship between the
+actual temperature and the subjective temperature. It would be a red flag if 
+there wasn't! Similarly there is a negative relationship between humidity and 
+wind speed (correlation = -0.33) suggesting that when it's more humid, it's less
+windy. We also see that the duration of the bike ride is very heavily 
+left-skewed so we can note that we might need a transformation when we get to 
+the analysis.
+
+#### Aggregation
+
+In any analysis we use aggregation techniques to summarize and compress data.
+We can also use aggregation to create new variables, and that's something you'll
+need to do in your first project. 
+
