@@ -1,4 +1,4 @@
-# Project 1
+Project 1
 
 ### Introduction
 
@@ -66,6 +66,7 @@ Conduct an analysis using the techniques we've discussed as well as any others y
 1. formalize the business problem as a data mining process
 2. *define* the outcome(s) variables
 3. use *aggregation* and *summaries* to create model inputs
+4. report on performance
 
 ### Questions to think about
 
