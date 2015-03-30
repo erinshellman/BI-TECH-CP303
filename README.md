@@ -15,7 +15,7 @@ Grading is based on classroom participation, completion of homeworks and project
 
 ## Assignments
 
-#### Projects
+#### [Projects](https://github.com/erinshellman/BI-TECH-CP303/tree/master/projects)
 
 There are a total of four projects, one for each topic area. For each project, you will receive a business problem and a corresponding data set. You're free to use any methods you like, so long as you support your choices. You will write a brief report of your analyses and provide/receive feedback from your classmates.
 
@@ -27,7 +27,7 @@ When you turn in your project reports, you will receive the reports of three of 
 
 | Assignment |   Date   |
 |-----------|----------|
-| Project 1 | April 27 | 
+| [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | April 27 | 
 | Project 1 Critiques | May 4 | 
 | Project 2 | May 11   | 
 | Project 2 Critiques | May 18 | 
