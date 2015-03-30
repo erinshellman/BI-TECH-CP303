@@ -55,7 +55,7 @@ str(stations)
  $ waste_basket            : int  NA NA NA NA NA NA NA NA NA 0 ...
  $ waste_disposal          : int  NA NA NA NA NA NA NA NA NA 0 ...
   [list output truncated]
-``
+```
 
 Read more about the data [here](https://archive.ics.uci.edu/ml/datasets/Bike+Sharing+Dataset).
 
