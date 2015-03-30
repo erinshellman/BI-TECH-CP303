@@ -1,6 +1,6 @@
 # Project 1
 
-### Intro 
+### Introduction
 
 Bike-share programs in urban cities are popping up all over the country. These systems allow people to rent bikes from stations for short-term use, then return the bikes to a station at their destination. Seattle recently installed [Pronto](https://www.prontocycleshare.com/) stations in locations all over the city, and Pronto wants to understand what factors predict a successful bike station. Use the methods you learned to help Pronto predict the best locations to install new bike-share stations.
 
