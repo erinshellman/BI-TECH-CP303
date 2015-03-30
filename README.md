@@ -49,7 +49,7 @@ Everyone is required to do original work for all projects. You're free to openly
 
 Week | Date | Topic | Dataset
 -------------- | ------------ | ------------- | -------------
-1 | April 6 | Introduction to Data mining and programming with R. | Capital Bikeshare
+1 | April 6 | Introduction to Data mining and programming with R | Capital Bikeshare
 2 | April 13 | Linear regression | Capital BikeShare 
 3 | April 20 | Linear regression extensions | Capital BikeShare 
 4 | April 27 | Logistic regression | Twitter user data 
