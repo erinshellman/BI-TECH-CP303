@@ -33,6 +33,7 @@ two, `dplyr` and `ggplot2`.
 # Install the packages if you don't have them already.
 #install.packages('dplyr')
 #install.packages('ggplot2')
+#install.package('GGally')
 
 # Then load them up.
 library(dplyr)
@@ -404,14 +405,18 @@ and try out some new figures. What did you learn from your figure?
     
 ## Exploratory data analysis
 
-The *diamonds* dataset was a good warm-up, but let's dive into data we'll be 
-working with for the first three weeks of class.  The data are from a bike
-share program in Washington D.C., and are split into two files. The first file 
+The *diamonds* dataset was a good warm-up, but let's dive into dataset we'll be 
+working with for the first three weeks of class. These data are from Washington
+D.C.'s bikeshare bike in 2012, and are split into two files. The first file 
 called *usage_2012.tsv* is large and contains each rental event as well as
 hourly weather information. The second file, called *stations.tsv* contains 
 geographical data about the stations like lat/long as well as counts of nearby
 amenities and road features. Let's go through a quick exploratory data analysis 
-of the usage data and touch on tips that will be useful for your first project.
+of the usage data keeping in mind that for the first project you'll need to:
+
+1. formalize the business problem as a data mining process
+2. *create* the outcome(s) variables
+3. use *aggregation* and *summaries* to create model inputs
 
 ```{r}
 setwd('~/projects/BI-TECH-CP303/projects/project 1')
@@ -423,14 +428,15 @@ str(usage)
 
 ```
 
-Spend some time looking the data over and getting a sense for what types of 
+Spend some time looking over the data and getting a sense for what types of 
 information are available. When I scan over a dataset I create small hypotheses 
 in my mind and think about the data I'd need to disprove them. For example, 
-*is_holiday*... something. 
+I see a dummy variable called *is_holiday*, I wonder if the number of rentals is
+higher on holiday? 
 
 The data are basically ready to go (*you're welcome*), but lets use the 
 *lubridate* package to convert our timestamps to date objects so that we can 
-use lots of convenient functions and do convenient things like subtract dates.
+do lots convenient things like subtract dates.
 
 ```{r}
 library(lubridate)
@@ -448,7 +454,7 @@ and end times and locations, customer type and lots of data about the season and
 the weather. Let's start exploring and see if we can make any preliminary 
 observations.
 
-```{r}
+```{r, fig.width = 4, fig.height = 3}
 # How many unique bikes are there?
 length(unique(usage$bike_id))
 
@@ -466,32 +472,30 @@ ggplot(usage, aes(x = humidity)) +
   theme_bw()
 ```
 
-This is great, but it's going to take us forever to start discovering patterns 
-like this. Fortunately we can use the `ggpairs` function in the *GGally* package 
-to plot continuous variables all at once.
+It's going to take forever to discover patterns like this. Fortunately we can 
+use the `ggpairs` function in the *GGally* package to plot continuous variables 
+all at once.
 
 ```{r}
 library(GGally)
 ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed')])
 ```
 
-This is great, but believe it or not we can do better. We can customize the 
-upper and lower quadrants and the diagonal. Let's make scatter plots with a 
-linear smoother on the lower half, correlation values on the upper half, and
-bar plots on the diagonal. Spend some time staring at the plot and making sure you 
-understand how it's read.
+We can customize the upper and lower quadrants and the diagonal. Let's make 
+scatter plots with a linear smoother on the lower half, correlation values on 
+the upper half, and bar plots on the diagonal. Spend some time staring at the 
+plot and make sure you understand how it's read.
 
-#```{r}
+```{r}
 ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed')],
-        lower = list(continuous = 'smooth', params = c(colour = 'blue')),
-        diag = list(continuous = 'bar', params = c(colour = 'blue')), 
-        upper = list(params = list(corSize = 6)), axisLabels = 'show')
-
-ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed', 'season')],
-        lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.50)),
-        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.80)), 
-        upper = list(continuous = 'cor', combo = 'facetdensity'),
-        axisLabels = 'show', color = 'season')
+          lower = list(continuous = 'smooth', params = c(color = 'steelblue', alpha = 0.10)),
+          diag = list(continuous = 'bar', params = c(fill = '#AAB6A2')), 
+          upper = list(continuous = 'cor', params = list(corSize = 4)), 
+        axisLabels = 'show') +
+# theme settings
+theme(legend.position = 'none', 
+        panel.grid.major = element_blank(), 
+        panel.border = element_blank())
 ```
 
 Immediately we can see that there's a strong linear relationship between the
@@ -501,6 +505,27 @@ wind speed (correlation = -0.33) suggesting that when it's more humid, it's less
 windy. We also see that the duration of the bike ride is very heavily 
 left-skewed so we can note that we might need a transformation when we get to 
 the analysis.
+
+We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
+figure below is facetted by the season:
+
+```{r}
+ggpairs(usage[ , c('temp', 'humidity', 'windspeed', 'season')],
+        lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
+        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.70)), 
+        upper = list(continuous = 'cor', combo = 'facetdensity'),
+        axisLabels = 'show', color = 'season')
+
+ggpairs(usage[ , c('temp', 'humidity', 'windspeed', 'season')],
+        lower = list(continuous = 'points', params = list(alpha = 0.70)),
+        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.70)), 
+        upper = list(continuous = 'cor'),
+        axisLabels = 'show', color = 'season')
+```
+
+Again we have marginal densities on the diagonal, broken up by season. Not 
+surprisingly there's 4 distinct temperature distributions. We can also see that
+there's a relations
 
 #### Aggregation
 
