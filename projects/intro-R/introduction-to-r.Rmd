@@ -486,15 +486,17 @@ scatter plots with a linear smoother on the lower half, correlation values on
 the upper half, and bar plots on the diagonal. Spend some time staring at the 
 plot and make sure you understand how it's read.
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 ggpairs(usage[ , c('duration_mins', 'temp', 'subjective_temp', 'humidity', 'windspeed')],
           lower = list(continuous = 'smooth', params = c(color = 'steelblue', alpha = 0.10)),
-          diag = list(continuous = 'bar', params = c(fill = '#AAB6A2')), 
+          diag = list(continuous = 'bar', params = c(fill = '#AAB6A2', alpha = 0.80)), 
           upper = list(continuous = 'cor', params = list(corSize = 4)), 
         axisLabels = 'show') +
 # theme settings
+#theme_bw() +
 theme(legend.position = 'none', 
         panel.grid.major = element_blank(), 
+        axis.ticks = element_blank(),
         panel.border = element_blank())
 ```
 
@@ -509,27 +511,26 @@ the analysis.
 We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
 figure below is facetted by the season:
 
-```{r}
+```{r, message = FALSE, warning = FALSE}
 ggpairs(usage[ , c('temp', 'humidity', 'windspeed', 'season')],
         lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
-        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.70)), 
+        diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
         upper = list(continuous = 'cor', combo = 'facetdensity'),
-        axisLabels = 'show', color = 'season')
-
-ggpairs(usage[ , c('temp', 'humidity', 'windspeed', 'season')],
-        lower = list(continuous = 'points', params = list(alpha = 0.70)),
-        diag = list(continuous = 'density', params = list(size = 1, alpha = 0.70)), 
-        upper = list(continuous = 'cor'),
         axisLabels = 'show', color = 'season')
 ```
 
 Again we have marginal densities on the diagonal, broken up by season. Not 
 surprisingly there's 4 distinct temperature distributions. We can also see that
-there's a relations
+there's a relationship between 
 
-#### Aggregation
+#### Aggregation and summary with *dplyr*
 
 In any analysis we use aggregation techniques to summarize and compress data.
 We can also use aggregation to create new variables, and that's something you'll
-need to do in your first project. 
+need to do in your first project. We got a preview of *dplyr* in the violin 
+plot, but we were really just scratching the surface of it's capabilities.
+
+
+
+
 
