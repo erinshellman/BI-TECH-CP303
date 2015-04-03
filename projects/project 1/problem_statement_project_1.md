@@ -6,7 +6,7 @@ Bike-share programs in urban cities are popping up all over the country. These s
 
 ### Data 
 
-You have two files to work with, *usage_2012.tsv* and *stations.tsv*. The *usage_2012.tsv* file is large and contains each rental event as well as hourly weather data. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features.  
+You have two files to work with, [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv) and [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv). The *usage_2012.tsv* file is large and contains each rental event as well as hourly weather data. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features.  
 
 
 ```{r}
@@ -66,7 +66,7 @@ Conduct an analysis using the techniques we've discussed as well as any others y
 1. formalize the business problem as a data mining process
 2. *define* the outcome(s) variables
 3. use *aggregation* and *summaries* to create model inputs
-4. report on performance
+4. report on the performance of your final model
 
 ### Questions to think about
 
