@@ -423,6 +423,12 @@ setwd('~/projects/BI-TECH-CP303/projects/project 1')
 usage = read.delim('./data/capital-bike-share/usage_2012_subset.tsv',
                    sep = '\t',
                    header = TRUE)
+
+#usage_file = 'https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012_subset.tsv'
+#usage = read.delim(usage_file,
+#                   sep = '\t',
+#                   header = TRUE)
+
 head(usage)
 str(usage)
 
@@ -529,6 +535,74 @@ In any analysis we use aggregation techniques to summarize and compress data.
 We can also use aggregation to create new variables, and that's something you'll
 need to do in your first project. We got a preview of *dplyr* in the violin 
 plot, but we were really just scratching the surface of it's capabilities.
+
+List of [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
+
+* `filter()` and `slice()`
+* `arrange()`
+* `select()` and `rename()`
+* distinct()
+* `mutate()` and `transmute()`
+* `summarise()`
+* `sample_n()` and `sample_frac()`
+
+Ultimately, we want to predict the success of a station, how should we represent
+'success?' Could try number of customers per day.
+
+```{r}
+# almost!
+custs_per_day = usage %>% group_by(as.Date(time_start)) %>% summarize(no_rentals = n())
+head(custs_per_day)
+
+# yes!
+custs_per_day = usage %>% group_by(time_start = as.Date(time_start), station_start) %>% summarize(no_rentals = n())
+head(custs_per_day)
+
+require(scales) # this package gives us pretty date formatting
+ggplot(custs_per_day, aes(x = as.Date(time_start), y = no_rentals)) + 
+  geom_line(aes(color = factor(station_start)))
+
+# Maybe we want average daily rentals
+mean_custs_per_day = custs_per_day %>% group_by(station_start) %>% summarize(mean_rentals = mean(no_rentals))
+
+ggplot(mean_custs_per_day, aes(x = station_start, y = mean_rentals)) +
+  geom_bar(stat = 'identity') +
+  coord_flip()
+
+ggplot(na.omit(mean_custs_per_day), aes(x = reorder(station_start, mean_rentals), y = mean_rentals)) +
+  geom_bar(stat = 'identity') +
+  coord_flip()
+
+ggplot(na.omit(filter(mean_custs_per_day, mean_rentals > 1.25)), 
+       aes(x = reorder(station_start, mean_rentals), y = mean_rentals)) +
+  geom_bar(stat = 'identity') +
+  coord_flip()
+
+# Does the weather change usage patterns?
+usage_weather = usage %>% 
+  group_by(time_start = as.Date(time_start), station_start, weather_desc) %>% 
+  summarize(no_rentals = n())
+
+```
+
+It does look like maybe we have enough variation in the station usage to be able
+to make inferences about what makes a station successful.
+
+###### Self-check
+
+Use combinations of the dplyr verbs to 
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
