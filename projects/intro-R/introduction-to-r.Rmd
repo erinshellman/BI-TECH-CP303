@@ -239,7 +239,24 @@ that maps data onto x and y dimensions for our plot, yet to be defined.
 # scatter plot
 ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
-  geom_point() + # draw a scatter plot
+  geom_point(alpha = 0.10) + # draw a scatter plot
+  # plot labeling
+  scale_x_continuous('Carat') +
+  scale_y_continuous('Price (USD)') + 
+  # theme elements
+  ggtitle('Are higher carat more expensive?') + 
+  theme_minimal() + # simpler colors. how does it look if you remove it?
+  theme(
+    axis.text.x = element_text(size = 13),
+    axis.text.y = element_text(size = 13),
+    title = element_text(size = 12),
+    axis.title = element_text(size = 15),
+    axis.ticks = element_blank())
+
+# scatter plot
+ggplot(diamonds, aes(x = carat, y = price)) +
+  # data mapping
+  geom_hex() + # draw a scatter plot
   # plot labeling
   scale_x_continuous('Carat') +
   scale_y_continuous('Price (USD)') + 
@@ -558,7 +575,7 @@ head(custs_per_day)
 custs_per_day = usage %>% group_by(time_start = as.Date(time_start), station_start) %>% summarize(no_rentals = n())
 head(custs_per_day)
 
-require(scales) # this package gives us pretty date formatting
+library(scales) # this package gives us pretty date formatting
 ggplot(custs_per_day, aes(x = as.Date(time_start), y = no_rentals)) + 
   geom_line(aes(color = factor(station_start)))
 
@@ -590,7 +607,7 @@ to make inferences about what makes a station successful.
 
 ###### Self-check
 
-Use combinations of the dplyr verbs to 
+Use combinations of the *dplyr* verbs to create potential outcomes for your projects.
 
 
 

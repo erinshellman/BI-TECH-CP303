@@ -1,0 +1,158 @@
+---
+title: "Linear regression in R"
+author: "Erin Shellman"
+date: "April 13 & 20, 2015"
+output: html_document
+---
+
+## Linear regression 
+
+#### The *caret* package
+
+The *caret* package in R contains helper functions that provide a unified 
+framework for data cleaning/splitting, and model training and comparison.  
+
+```{r}
+# install.packages('caret', dependencies = TRUE)
+library(caret)
+set.seed(1234) # set a seed
+setwd('~/projects/BI-TECH-CP303/projects/project 1')
+usage = read.delim('./data/capital-bike-share/usage_2012_subset.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+usage = read.delim('./data/capital-bike-share/usage_2012.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+stations = read.delim('./data/stations_with_amenities.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+Setting a seed in R insures that you get identical results each time you run
+your code. Since resampling methods are inherently probabilistic, every time we 
+rerun them we'll get slightly different answers. Setting the seed to the same 
+number insures that we get identical randomness each time the code is run, and
+that's helpful for debugging.
+
+#### Splitting data into test and train sets
+
+In data mining we're interested in creating models for prediction, so 
+
+```{r}
+custs_per_day = usage %>% 
+  group_by(time_start = as.Date(time_start), station_start) %>% 
+  summarize(no_rentals = n(),
+            mean_temp = mean(temp))
+
+head(custs_per_day)
+
+in_train = createDataPartition(y = no_rentals,
+                                   p = 0.75, # 75% in train, 25% in test.
+                                   list = FALSE)
+head(in_train) # row indices of observations in the training set
+
+training_set = spam[in_train, ]
+testing_set = spam[-in_train, ]
+
+# Test that the training set is 75% of the original data.
+0.75 == round(length(in_train) / nrow(spam), 2)
+```
+
+## Exploratory
+
+featurePlot()
+
+Plotting notes:
+
+Makes your plots only on the training set and don't use the test set for 
+exploration.
+
+You're looking for imbalances in the outcome/predictors
+outliers, groups of points not explained by a predictor, skewness.
+
+#### Preprocessing
+
+###### Skew
+
+During your exploration, you might encounter skewness.  One tell-tale sign is a 
+mean and median being very different.  Or a distribution with a large standard
+deviation relative its mean.  One way to handle situations like this is to 
+standardize your data.  Can use `scale`.  One thing to note is that if you
+standardize your training set, you must identically standardize your testing set.
+In the case of center scaling, the mean you subtract off and the standard 
+deviation you divide by are the mean and standard deviation computed with the
+training set, **not** the test set.  That means your average value might not be
+distributed exactly $ N(0, 1) $.
+
+preprocessor = preProcess(taining[ , cols], method = c('center', 'scale'))
+test_set_processed = predict(preprocessor, testing[ , cols])
+
+###### Missingness
+
+preProcess(taining, method = 'knnImpute')
+
+## Fitting / Training
+
+A workhorse function in the *caret* package in the `train` function.  This
+function can be used to evaluate performance parameters, choose optimal models 
+based on the values of those parameters, and estimate model performance.
+
+```{r}
+#model_fit = train(type ~., data = training_set, method = 'glm')
+data(swiss)
+#model_fit = train(Fertility ~., data = swiss, method = 'lm') 
+#summary(model_fit)
+```
+
+Explain the output.
+
+## Prediction
+
+```{r}
+#predictions = predict(model_fit, newdata = testing_set)
+
+```
+
+## Diagnostics
+
+The `confusionMatrix` function prints a lot of diagnostic measures that you
+might want to evaluate when developing your models.
+
+```{r}
+#confusionMatrix(predictions, testing_set$type)
+
+```
+
+## Feature Selection
+
+Feature extraction at its most basic level is done by the context of the problem
+being solved. If you're trying to estimate the time of day when load on a 
+server will near capacity, the features you include in your data will naturally 
+be related.  Time, number of requests per second.
+
+Feature creation can also be done via exploratory analysis as trends and 
+patterns emerge.
+
+dummyVars()
+nearZeroVar()
+
+## Linear regression extensions
+
+Lots of regression methods [here](http://topepo.github.io/caret/Linear_Regression.html).
+
+Forward selection
+model_fit = train(Fertility ~., data = swiss, method = 'leapForward') 
+Stepwise selection
+model_fit = train(Fertility ~., data = swiss, method = 'leapSeq') 
+partial least squares
+model_fit = train(Fertility ~., data = swiss, method = 'pls') 
+penalized linear regression
+model_fit = train(Fertility ~., data = swiss, method = 'penalized') 
+lasso
+model_fit = train(Fertility ~., data = swiss, method = 'lass') 
+
+## Project tips
+
+Provide them with some guidance, suggestions and code snippets for the project.
