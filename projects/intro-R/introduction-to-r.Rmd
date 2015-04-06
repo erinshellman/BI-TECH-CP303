@@ -1,25 +1,31 @@
 ---
-title: "Introduction to R: making visuals and exploratory data analysis"
+title: 'Introduction to R: making visuals and exploratory data analysis'
 author: "Erin Shellman"
 date: "April 6, 2015"
 output:
-  html_document:
-    toc: yes
-    toc_depth: 3
-    theme: readable
   pdf_document:
     toc: yes
+    toc_depth: 2
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+#knitr::opts_chunk$set(cache = TRUE)
 require(dplyr)
 require(ggplot2)
+require(GGally)
+require(scales)
+require(lubridate)
 ```
 
 ## Preparation 
 
-Exploratory data analysis (EDA) is a the second step of the data mining process, 
+### Strap in!
+
+Exploratory data analysis (EDA) is the second step of the data mining process, 
 and it's a perfect way to get acquainted with our tools. This notebook is a 
 guide to help you get started with R. It's intentionally incomplete, so get 
 ready to Google! For those who are new to R, new to working with data, new to 
@@ -49,11 +55,130 @@ install.packages('dplyr', dependencies = TRUE)
 install.packages('ggplot2', dependencies = TRUE)
 install.packages('GGally', dependencies = TRUE)
 install.packages('scales', dependencies = TRUE)
+install.packages('lubridate', dependencies = TRUE)
 
 # load
 library(dplyr)
 library(ggplot2)
 ```
+
+## R Basics
+
+### Basic calculation
+
+You can use R just like a calculator. It's so intuitive I probably don't have 
+to tell you, but I will anyway! Here's all the arithmetic operators you can use:
+
+| Operator | Behavior |
+|-----+-------|
+| +  | Add scalar values or vectors |
+| -  | Subtract scalar values or vectors  |
+| *  | Multiply scalar values or vectors |
+| /  | Divide scalar values or vectors  |
+| ^  | exponentiate scalar values or vectors |
+| %%  | modulo on scalar values or vectors |
+| %/%  | integer division on scalar values or vectors |
+
+You can type things like this right into R:
+```{r}
+23 + 45
+value = (4.59 / 0.1)^3
+print(value)
+
+# the coolest part is that R will do these operations element-wise on vectors
+vector1 = c(1, 2, 3, 4)
+vector2 = c(2, 2, 2, 2) # 'c' is short for Concatenate
+
+vector1 + vector2
+vector1 * vector2
+vector1^2
+```
+
+### Data structures
+
+R has four primary data structures:
+
+* vectors (or arrays)
+* matrices
+* data frames
+* lists
+
+#### Vectors
+
+Vectors are one-dimensional structures that contain data of the same type. 
+For example `age = c(18, 30, 27, 59)` is a *numeric* vector and 
+`relationship = c('sister', 'aunt', 'nephew')` is a vector of strings. The 
+*relationship* vector is a special categorical type called a *factor*. Factors 
+are essential for plotting, and we'll talk about them in more detail later on.
+
+#### Matrices
+
+Matrcies are just like vectors in two-dimensions. They are defined and
+accessed like this:
+```{r}
+my_matrix = matrix(data = c(1, 2, 3, 4, 5, 6), ncol = 3)
+my_matrix
+
+# say we want to grab the even numbers.
+# we can index into my_matrix like this:
+my_matrix[2, ]
+
+# but what if they don't happen to all be in the second row?
+my_matrix[(my_matrix %% 2) == 0]
+
+# how'd I do that?!
+```
+
+#### Dataframes
+
+We're going to focus on dataframes for most of this class. Dataframes are like 
+matrices with column names (*headers*) and they can contain data of 
+different types, like factors and numerical value. Headers are great because we 
+can reference columns by name!
+```{r}
+
+df = data.frame(age = c(10, 20, 45, 37),
+                relationship = c('sister', 'cousin', 'father', 'aunt'))
+df
+# Select one column
+df$relationship
+
+# 'mean' is a built-in R function
+mean(df$age)
+
+# or 
+mean(df[ , 'age'])
+```
+
+#### Lists
+
+We won't use lists much in this class, but they're pretty useful. Lists
+are collections of objects indexed by a key. The stuff inside of a list doesn't
+need to be the same dimensions or type, and that makes lists a convenient data
+structure for storing collections of related items:
+```{r}
+my_list = list(value = 1, array = c(1,2), another_array = 1:5)
+my_list
+
+# get the list keys
+names(my_list)
+my_list$array
+```
+
+I use lists most often when I'm computing something in batches and want to 
+store the output in an intermediate object before, say, combining all the 
+results. For example, maybe I'm fitting a monthly forecast and I have three 
+years of data. I could write a function that does something like this:
+```{r, eval = FALSE}
+while I still have data left:
+  loop through data month-by-month:
+    fit model
+    results[month] = fitted model
+    return(results)
+```
+
+Then, at the end of this code I've got a list, indexed by month, that contains
+all my models and their associated attributes.
 
 ### Reading in data
 
@@ -87,29 +212,9 @@ tail(diamonds, 3) # print bottom 3 rows
 summary(diamonds) # summarize the columns
 ```
 
-## R Basics
-
-R has many data types including lists, matrices, tables and dataframes.  We'll 
-be working primarily with dataframes in this class.  Dataframes should be 
-familiar and can be thought of as a spreadsheet view were columns are typically
-your variable and rows are observations.
-
-### Variable types
-* factors are categorical
-* numeric 
-
-Factors are going to be essential for plotting, and we'll talk about them in 
-more detail later on.
-
-Vectors are one-dimensional data types that contain data of the same type. 
-For example `age = c(18, 30, 27, 59)` is a numeric vector and 
-`relationship = c('sister', 'aunt', 'nephew')` is a vector of strings.
-
-Add a table of useful operators. + - * / %% ^
-
 ### Slicing and dicing
 
-Dataframes are indexed `df[row, col]`.  Leaving either the `row` or `col` 
+Matrices and dataframes are indexed `df[row, col]`.  Leaving either the `row` or `col` 
 element blank tells R to take all rows, or all columns. There are many ways to 
 slice up dataframe in R for example:
 ```{r}
@@ -166,7 +271,7 @@ paste into the console.
 
 #### The Internets
 
-Sometimes it's faster and easier to get help with Google. The first setp of my 
+Sometimes it's faster and easier to get help with Google. The first step of my 
 troubleshooting workflow is typing questions literally into Google, with a few specifics about
 the language of the solution I'm looking for.  For example, "R ggplot2 how to 
 change legend font size" returns the following top 3 links:
@@ -186,6 +291,8 @@ to R (and even if you're not) you're going to have to look a lot of things up.
 If you're stuck, don't spin your wheels, just start typing the problem into 
 Google and you might be surprised at how easy it is to find solutions. 
 
+#### Useful links
+
 * http://www.statmethods.net/
 * http://adv-r.had.co.nz/
 * http://adv-r.had.co.nz/Style.html
@@ -198,12 +305,12 @@ Finally, ask your classmates! As a professional data analyst you likely won't
 be working alone. If you're stuck, chances are that your classmates are too.
 Even if not, sometimes getting a fresh set of eyes on your code is all you need
 to find little bugs. Help each other out!
+
 #### Self-check
 
 1. How many diamonds cost less than $500?
-2. How many diamonds cost less than $100?
-3. How many diamonds cost at least $15,000?
-4. What is the range of prices for diamonds of color D?
+2. How many diamonds cost at least $15,000?
+3. What is the range of prices for diamonds of color D?
 
 ## Graphics
 
@@ -227,13 +334,15 @@ the extent that they enhance the visualization's narrative.
 
 #### Visualization with *ggplot2*
 
+### Introduction
+
 R has three core plotting systems, *base*, *lattice* and *ggplot2*.
 In this course we'll use the plotting library *ggplot2* because it 
 combines the best parts of the other two plotting systems and uses a consistent 
 syntax that makes plot code intuitive and reusable.
 
 If you're familiar with R's `base` graphics then 
-[qplot()](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
+[`qplot()`](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
 free to read up on `qplot()` and its uses, but we're going to focus primarily on
 the `ggplot` function for constructing graphics.
 
@@ -292,7 +401,7 @@ the `ggplot` statement, then we tell ggplot what type of plot to make
 colors and annotation.  I highly recommend having this page up when plotting: 
 <http://docs.ggplot2.org/>
 
-```{r, fig.width = 4, fig.height = 3}
+```{r, fig.width = 4, fig.height = 3, warning = FALSE}
 # histogram
 ggplot(diamonds, aes(x = price)) +
   # data mapping
@@ -313,9 +422,9 @@ ggplot(diamonds, aes(x = price)) +
 
 See how much of that code we were able to reuse?
 
-#### Aesthetics 
+### Aesthetics 
 
-When you want to change a feature of you figure based on the value of another 
+When you want to change a feature of your figure based on the value of another 
 variable, you use aesthetics. Unlike the histogram above, where we could specify
 the color explicitly in the *geom()*, when the color depends on the value of a
 variable, it goes inside `aes()`.
@@ -338,16 +447,16 @@ ggplot(diamonds, aes(x = carat, y = price)) +
     axis.ticks = element_blank())
 ```
 
-#### Factors
+### Factors
 
-We used a new function called `factor` in the plot above to describe how to 
+We used a new function called `factor` in the plot above when describing how to 
 color the points. A `factor` is a variable type in R that represents 
 categorical data, in this case the color of a diamond. Factor variables are 
 very handy in *ggplot2* because they allow us to quickly change color, shape,
 facet and many other graphical features by the value of a category. Let's try it
 with facets.
 
-#### Faceting 
+### Faceting 
 
 Our colorful carat plot looks pretty good, but there are a lot of points laying 
 on top of each other. When you want to compare plots across groups separately 
@@ -394,13 +503,13 @@ ggplot(diamonds, aes(clarity, fill = factor(cut))) +
     axis.ticks = element_blank())
 ```
 
-#### Annotation
+### Annotation
 
 Annotation on a figure can add clarity and help the audience understand the 
 message.  A lot of these features are not necessary for exploratory analyses,
 but can be very helpful for communicating final results. For example, suppose 
 we're interested in characterizing the joint distributions of carats and cuts.
-These distributions are bumping and highly left-skewed, so it's difficult to
+These distributions are bumpy and highly right-skewed, so it's difficult to
 assertain the mean without further annotation.
 
 ```{r}
@@ -430,24 +539,30 @@ mean carat of each cut on top of the violin plot. Also we drew the range of thos
 means using `geom_hline` which lets us quickly assess the spread in means. We'll
 talk about that cool aggregation step in detail in the next section.
 
-###### Self-check
+#### Self-check
 
 1. Spend some time exploring the [ggplot2 docs](http://docs.ggplot2.org/current/)
 and try out some new figures. What did you learn from your figure?
     
 ## Exploratory data analysis
 
+### Capital Bikeshare
+
 The *diamonds* dataset was a good warm-up, but let's dive into dataset we'll be 
 working with for the first three weeks of class. These data are from Washington
-D.C.'s bikeshare bike in 2012, and are split into two files. The first file 
-called *usage_2012.tsv* is large and contains each rental event as well as
-hourly weather information. The second file, called *stations.tsv* contains 
-geographical data about the stations like lat/long as well as counts of nearby
-amenities and road features. Let's go through a quick exploratory data analysis 
-of the usage data keeping in mind that for the first project you'll need to:
+D.C.'s bikeshare program in 2012, and are split into three files. The first file 
+called 
+[*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv) contains each rental event. The second file, called 
+[*daily_weather.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv)
+, contains normalized DC weather data from 2012. Finally
+[*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv) 
+contains geographical data about the stations like lat/long as 
+well as counts of nearby amenities and road features. Let's go through a quick 
+exploratory data analysis of the usage data keeping in mind that for the first 
+project you'll need to:
 
 1. formalize the business problem as a data mining process
-2. *create* the outcome(s) variables
+2. *create* the outcome(s) variables (*e.g.* rentals per day)
 3. use *aggregation* and *summaries* to create model inputs
 
 ```{r, eval = FALSE}
@@ -479,7 +594,7 @@ Spend some time looking over the data and getting a sense for what types of
 information are available. When I scan over a dataset I create small hypotheses 
 in my mind and think about the data I'd need to disprove them. For example, 
 I see a dummy variable called *is_holiday*, I wonder if the number of rentals is
-higher on holiday? 
+higher on holidays? 
 
 The data are basically ready to go (*you're welcome*), but lets use the 
 *lubridate* package to convert our timestamps to date objects so that we can 
@@ -509,7 +624,7 @@ length(unique(usage$bike_id))
 length(unique(usage$station_start))
 
 # What's the temperature distribution like?
-summary(usage$temp)
+summary(weather$temp)
 ggplot(weather, aes(x = temp)) +
   geom_density() +
   theme_minimal()
@@ -518,6 +633,8 @@ ggplot(weather, aes(x = humidity)) +
   geom_density() +
   theme_minimal()
 ```
+
+### *ggpairs*
 
 It's going to take forever to discover patterns like this. Fortunately we can 
 use the `ggpairs` function in the *GGally* package to plot continuous variables 
@@ -548,10 +665,8 @@ theme(legend.position = 'none',
 Immediately we can see that there's a strong linear relationship between the
 actual temperature and the subjective temperature. It would be a red flag if 
 there wasn't! Similarly there is a negative relationship between humidity and 
-wind speed (correlation = -0.33) suggesting that when it's more humid, it's less
-windy. We also see that the duration of the bike ride is very heavily 
-left-skewed so we can note that we might need a transformation when we get to 
-the analysis.
+wind speed suggesting that when it's more humid, it's less
+windy. 
 
 We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
 figure below is facetted by the season:
@@ -576,27 +691,32 @@ Again we have marginal densities on the diagonal, broken up by season. Not
 surprisingly there's 4 distinct temperature distributions. We can also see that
 there's a relationship between 
 
-#### Aggregation and summary with *dplyr*
+### Aggregation and summarization with *dplyr*
 
 In any analysis we use aggregation techniques to summarize and compress data.
 We can also use aggregation to create new variables, and that's something you'll
 need to do in your first project. We got a preview of *dplyr* in the violin 
 plot, but we were really just scratching the surface of it's capabilities.
 
-List of [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
+Here's all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
 
 * `filter()` and `slice()`
 * `arrange()`
 * `select()` and `rename()`
-* distinct()
+* `distinct()`
 * `mutate()` and `transmute()`
 * `summarise()`
 * `sample_n()` and `sample_frac()`
 
-Ultimately, we want to predict the success of a station, how should we represent
-'success?' Could try number of customers per day.
+These verbs are linked together either by nesting, or by using 'pipes.' The 
+*dplyr* pipe (originally from a package called [*magrittr*](http://seananderson.ca/2014/09/13/dplyr-intro.html)),
+allows you to string operations together without saving the intermediate outputs.
+It is an extremely powerful method of aggregating and summarizing data.
 
-```{r}
+Ultimately, we want to predict the success of a station, how should we represent
+'success?' Could try number of rentals per day.
+
+```{r, warning = FALSE}
 # almost!
 custs_per_day = usage %>% group_by(as.Date(time_start)) %>% summarize(no_rentals = n())
 head(custs_per_day)
@@ -655,7 +775,7 @@ ggplot(na.omit(filter(mean_custs_per_day, mean_rentals > 80)),
 Clearly some stations are more successful than others. It's your job in project 
 1 to determine if station success can be predicted by these data.
 
-###### Self-check
+#### Self-check
 
 1. Use combinations of the *dplyr* verbs to familiarize yourself with the data.
 Are you able to identify any interesting patterns?
