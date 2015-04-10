@@ -164,54 +164,6 @@ exploration.
 You're looking for imbalances in the outcome/predictors
 outliers, groups of points not explained by a predictor, skewness.
 
-```{r}
-mean_custs_per_day = custs_per_day %>% 
-  group_by(station_start) %>% 
-  summarize(mean_rentals = mean(no_rentals))
-head(mean_custs_per_day)
-x = merge(mean_custs_per_day, stations, by.x = 'station_start', by.y = 'station')
-
-ggplot(x, aes(x = crossing, y = mean_rentals)) +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 5, alpha = 0.60) +
-  theme_minimal() +
-  scale_x_continuous('Number of crosswalks within a quarter mile') +
-  scale_y_continuous('Number of rentals') +
-  theme(
-    text = element_text(family = 'Neuton'),
-    title = element_text(size = 12),
-    axis.ticks = element_blank(),
-    axis.text.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25),
-    axis.title = element_text(size = 30))
-
-plot_model = lm(mean_rentals ~ crossing, data = x)
-new_data = data.frame(
-  crossing = x$crossing,
-  mean_rentals = x$mean_rentals,
-  mean_pred = predict(plot_model, x))
-new_data$resid = round(with(new_data, mean_rentals - mean_pred), 2)
-
-ggplot(x, aes(x = crossing, y = mean_rentals)) +
-  geom_linerange(data = new_data, aes(x = crossing, ymin = mean_pred, ymax = mean_rentals), alpha = 0.70, color = 'red3') +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 5, alpha = 0.60) +
-  theme_minimal() +
-  scale_x_continuous('Number of crosswalks within a quarter mile') +
-  scale_y_continuous('Number of rentals') +
-  theme(
-    text = element_text(family = 'Neuton'),
-    title = element_text(size = 12),
-    axis.ticks = element_blank(),
-    axis.text.x = element_text(size = 25),
-    axis.text.y = element_text(size = 25),
-    axis.title = element_text(size = 30))
-
-regplot + geom_linerange(data = new_data, 
-                         aes(x = crossing, ymin = mean_pred, ymax = mean_rentals), colour = "blue", alpha = 0.40) +
-  geom_text(data = new_data, aes(x = crossing, y = mean_rentals, label = resid), hjust = -0.2, colour = "blue")
-
-```
 
 #### Preprocessing
 
