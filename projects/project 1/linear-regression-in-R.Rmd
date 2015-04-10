@@ -7,27 +7,111 @@ output: html_document
 
 ## Linear regression 
 
-#### The *caret* package
+http://topepo.github.io/caret/Linear_Regression.html
+
+### Data preparation
+
+We're working with the Capital Bikeshare again this week, so start by reading in
+*usage*, *weather*, *stations*.
+```{r, eval = FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+usage = read.delim('usage_2012.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+weather = read.delim('daily_weather.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+stations = read.delim('stations.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+```{r, echo = FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+
+setwd('~/projects/BI-TECH-CP303/projects/project 1')
+usage = read.delim('./data/usage_2012.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+stations = read.delim('./data/stations.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+weather = read.delim('./data/daily_weather.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+### Merging data
+
+We have three related datasets to work with, but we can't really get started 
+until we figure out how to combine them. Let's start with *usage* and *weather*.
+The *usage* dataframe is at the resolution of the hour, while the *weather* data
+are at the resolution of a day, so we know we're going to have to either 
+duplicate or compress data to merge. I vote compress, let's summarize! 
+```{r}
+custs_per_day = usage %>% 
+  group_by(time_start = as.Date(time_start), station_start) %>% 
+  summarize(no_rentals = n())
+
+head(custs_per_day)
+```
+
+Perfection, now we can merge!  What's the key?
+```{r}
+# make sure we have consistent date formats
+custs_per_day$time_start = ymd(custs_per_day$time_start)
+weather$date = ymd(weather$date)
+
+weather_rentals = merge(custs_per_day, weather, 
+                        by.x = 'time_start', by.y = 'date')
+
+# I like to check dimensions after to make sure they are what I'd expect
+dim(custs_per_day)
+dim(weather)
+dim(weather_rentals)
+
+head(weather_rentals)
+```
+
+Great, now we want to merge on the last dataset, *stations*. What is the key to 
+link *weather_rentals* with *stations*?
+```{r}
+final_data = merge(weather_rentals, stations, 
+                   by.x = 'station_start', by.y = 'station')
+dim(final_data)
+dim(weather_rentals)
+
+head(final_data)
+
+# probably want to save this now!
+write.table(final_data, 'bikeshare_modeling_data.tsv', row.names = FALSE, sep = '\t')
+
+# rename to something more convenient and remove from memory
+data = final_data
+rm(final_data)
+```
+
+### The `lm()` function
+
+## Test and Train data
+
+### The *caret* package
 
 The *caret* package in R contains helper functions that provide a unified 
 framework for data cleaning/splitting, and model training and comparison.  
 
 ```{r}
-# install.packages('caret', dependencies = TRUE)
+install.packages('caret', dependencies = TRUE)
 library(caret)
-set.seed(1234) # set a seed
-setwd('~/projects/BI-TECH-CP303/projects/project 1')
-usage = read.delim('./data/capital-bike-share/usage_2012_subset.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-usage = read.delim('./data/capital-bike-share/usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-stations = read.delim('./data/stations_with_amenities.tsv',
-                   sep = '\t',
-                   header = TRUE)
 ```
 
 Setting a seed in R insures that you get identical results each time you run
@@ -36,28 +120,36 @@ rerun them we'll get slightly different answers. Setting the seed to the same
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
 
-#### Splitting data into test and train sets
+### Splitting data into test and train sets
 
-In data mining we're interested in creating models for prediction, so 
-
+In data mining we're interested in creating models for prediction, and we'll 
+assess the quality of our models by quantifying their prediction accuracy. To 
+measure prediction quality, we hold out a portion of our data called the *test*
+set. The *training* data is used to build the model.
 ```{r}
-custs_per_day = usage %>% 
-  group_by(time_start = as.Date(time_start), station_start) %>% 
-  summarize(no_rentals = n(),
-            mean_temp = mean(temp))
+set.seed(1234) # set a seed
 
-head(custs_per_day)
-
-in_train = createDataPartition(y = no_rentals,
+# select the training observations
+in_train = createDataPartition(y = data$no_rentals,
                                    p = 0.75, # 75% in train, 25% in test.
                                    list = FALSE)
 head(in_train) # row indices of observations in the training set
 
-training_set = spam[in_train, ]
-testing_set = spam[-in_train, ]
+training_set = data[in_train, ]
+testing_set = data[-in_train, ]
 
-# Test that the training set is 75% of the original data.
-0.75 == round(length(in_train) / nrow(spam), 2)
+dim(training_set)
+dim(testing_set)
+```
+
+```{r}
+
+model_fit = train(no_rentals ~., data = select(training_set, -station_start, -time_start, -season_code, -weather_code), method = 'lm') 
+
+model_fit = lm(no_rentals ~ factor(is_holiday) + temp + grave_yard, data = data)
+model_fit = lm(no_rentals ~ factor(is_holiday) + temp + bar, data = data)
+summary(model_fit)
+
 ```
 
 ## Exploratory
@@ -71,6 +163,55 @@ exploration.
 
 You're looking for imbalances in the outcome/predictors
 outliers, groups of points not explained by a predictor, skewness.
+
+```{r}
+mean_custs_per_day = custs_per_day %>% 
+  group_by(station_start) %>% 
+  summarize(mean_rentals = mean(no_rentals))
+head(mean_custs_per_day)
+x = merge(mean_custs_per_day, stations, by.x = 'station_start', by.y = 'station')
+
+ggplot(x, aes(x = crossing, y = mean_rentals)) +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 5, alpha = 0.60) +
+  theme_minimal() +
+  scale_x_continuous('Number of crosswalks within a quarter mile') +
+  scale_y_continuous('Number of rentals') +
+  theme(
+    text = element_text(family = 'Neuton'),
+    title = element_text(size = 12),
+    axis.ticks = element_blank(),
+    axis.text.x = element_text(size = 25),
+    axis.text.y = element_text(size = 25),
+    axis.title = element_text(size = 30))
+
+plot_model = lm(mean_rentals ~ crossing, data = x)
+new_data = data.frame(
+  crossing = x$crossing,
+  mean_rentals = x$mean_rentals,
+  mean_pred = predict(plot_model, x))
+new_data$resid = round(with(new_data, mean_rentals - mean_pred), 2)
+
+ggplot(x, aes(x = crossing, y = mean_rentals)) +
+  geom_linerange(data = new_data, aes(x = crossing, ymin = mean_pred, ymax = mean_rentals), alpha = 0.70, color = 'red3') +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 5, alpha = 0.60) +
+  theme_minimal() +
+  scale_x_continuous('Number of crosswalks within a quarter mile') +
+  scale_y_continuous('Number of rentals') +
+  theme(
+    text = element_text(family = 'Neuton'),
+    title = element_text(size = 12),
+    axis.ticks = element_blank(),
+    axis.text.x = element_text(size = 25),
+    axis.text.y = element_text(size = 25),
+    axis.title = element_text(size = 30))
+
+regplot + geom_linerange(data = new_data, 
+                         aes(x = crossing, ymin = mean_pred, ymax = mean_rentals), colour = "blue", alpha = 0.40) +
+  geom_text(data = new_data, aes(x = crossing, y = mean_rentals, label = resid), hjust = -0.2, colour = "blue")
+
+```
 
 #### Preprocessing
 
@@ -101,7 +242,6 @@ based on the values of those parameters, and estimate model performance.
 
 ```{r}
 #model_fit = train(type ~., data = training_set, method = 'glm')
-data(swiss)
 #model_fit = train(Fertility ~., data = swiss, method = 'lm') 
 #summary(model_fit)
 ```
@@ -156,3 +296,7 @@ model_fit = train(Fertility ~., data = swiss, method = 'lass')
 ## Project tips
 
 Provide them with some guidance, suggestions and code snippets for the project.
+
+
+
+
