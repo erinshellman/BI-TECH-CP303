@@ -2,11 +2,11 @@ Project 1
 
 ### Introduction
 
-Bike-share programs in urban cities are popping up all over the country. These systems allow people to rent bikes from stations for short-term use, then return the bikes to a station at their destination. Seattle recently installed [Pronto](https://www.prontocycleshare.com/) stations in locations all over the city, and Pronto wants to understand what factors predict a successful bike station. Use the methods you learned to help Pronto predict the best locations to install new bike-share stations.
+Bike-share programs in urban areas are popping up all over the country. These systems allow people to rent bikes from stations for short-term use, then return the bikes to a station at their destination. Recently [Pronto](https://www.prontocycleshare.com/) stations have been installed in locations all over Seattle, and Pronto wants to understand what factors predict a successful bike station so they can expand operations. Use the methods you learned to help Pronto predict the best locations to install new bike-share stations.
 
 ### Data 
 
-You have two files to work with, [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv) and [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv). The *usage_2012.tsv* file is large and contains each rental event as well as hourly weather data. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features.  
+You have three files to work with, [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv), [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv) and [*weather*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv). The *usage_2012.tsv* file contains each rental event. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features. Finally *weather.tsv* contains daily weather data.
 
 
 ```{r}
