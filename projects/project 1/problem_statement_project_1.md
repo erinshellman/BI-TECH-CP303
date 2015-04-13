@@ -85,7 +85,7 @@ Sections you'll probably want to include in your report are an introduction to t
 
 ### Tips
 
-* Remember that you're the quantitative expert and the client depends on you to help them make data-driven decisions.  It's *your* job to provide clarity and knowledge on the topic, and to present statistical arguments such that a non-techincal audience can understand your findings. 
+* Remember that you're the quantitative expert and the client depends on you to help them make data-driven decisions.  It's *your* job to provide clarity and knowledge on the topic, and to present statistical arguments such that a non-technical audience can understand your findings. 
 
 * Although you might want to include figures and tables from an exploratory analysis, this is a report for your customer.  That means you should be labeling axes, titling figures and providing all the information necessary to understand your results, and no more.
 
