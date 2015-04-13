@@ -6,7 +6,7 @@ Bike-share programs in urban areas are popping up all over the country. These sy
 
 ### Data 
 
-You have three files to work with, [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv), [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv) and [*weather*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv). The *usage_2012.tsv* file contains each rental event. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features. Finally *weather.tsv* contains daily weather data.
+You have three files to work with, [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv), [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv) and [*weather.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv). The *usage_2012.tsv* file contains each rental event. The *stations.tsv* file contains geographical data about the stations like lat/long as well as counts of nearby amenities and road features. Finally *weather.tsv* contains daily weather data.
 
 Here's the structure of the three datasets:
 ```{r}
