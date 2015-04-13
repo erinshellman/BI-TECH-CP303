@@ -69,7 +69,7 @@ stations = read.delim('stations.tsv',
 ### Merging data
 
 We have three related datasets to work with, but we can't really get started 
-until we figure out how to combine them. Let's start with *usage* and *weather*.
+until they're combined. Let's start with *usage* and *weather*.
 The *usage* dataframe is at the resolution of the hour, while the *weather* data
 are at the resolution of a day, so we know we're going to have to either 
 duplicate or compress data to merge. I vote compress, let's summarize! 
@@ -128,8 +128,7 @@ arguments are *formula* and *data*. Formulas in R are a little funny,
 instead of an = sign, they are expressed with a ~. Let's fit the model we saw in
 the lecture notes: $rentals = \beta_0 + \beta_1*crossing$. There's a little snag 
 we have to take care of first. Right now we've got repeated measures *i.e.* 
-one measurement per day, so we need to aggregate again. How do we aggregate over 
-date, but still maintain relevant seasonal data?
+one measurement per day, so we need to aggregate again this time over date.
 ```{r}
 rentals_crossing = data %>% 
   group_by(station_start) %>% 
@@ -192,9 +191,9 @@ model = lm(mean_rentals ~ crossing + windspeed, data = rentals_multi)
 summary(model)
 ```
 
-The model coefficients changed quite a lot when we added in windspeed. The 
-intercept is now negative, and the windspeed coefficient is huge! When 
-interpretting coefficients, it's important to keep the scale in mind. Windspeed 
+The model coefficients changed quite a lot when we added in wind speed. The 
+intercept is now negative, and the wind speed coefficient is huge! When 
+interpreting coefficients, it's important to keep the scale in mind. Wind speed 
 ranges from 0.05 to 0.44 so when you multiply 2036 by 0.05 for example, you end 
 up with about 102, which is within the range we'd expect.
 

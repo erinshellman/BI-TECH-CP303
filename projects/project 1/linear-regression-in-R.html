@@ -113,7 +113,7 @@ stations = read.delim('stations.tsv',
 </div>
 <div id="merging-data" class="section level3">
 <h3>Merging data</h3>
-<p>We have three related datasets to work with, but we can’t really get started until we figure out how to combine them. Let’s start with <em>usage</em> and <em>weather</em>. The <em>usage</em> dataframe is at the resolution of the hour, while the <em>weather</em> data are at the resolution of a day, so we know we’re going to have to either duplicate or compress data to merge. I vote compress, let’s summarize!</p>
+<p>We have three related datasets to work with, but we can’t really get started until they’re combined. Let’s start with <em>usage</em> and <em>weather</em>. The <em>usage</em> dataframe is at the resolution of the hour, while the <em>weather</em> data are at the resolution of a day, so we know we’re going to have to either duplicate or compress data to merge. I vote compress, let’s summarize!</p>
 <pre class="r"><code>head(usage)</code></pre>
 <pre><code>##   bike_id          time_start            time_end duration_mins
 ## 1  W01412 2012-01-01 00:04:00 2012-01-01 00:11:00             7
@@ -259,7 +259,7 @@ rm(final_data)</code></pre>
 </div>
 <div id="the-lm-function" class="section level3">
 <h3>The <code>lm()</code> function</h3>
-<p>The function for creating a linear model in R is <code>lm()</code> and the primary arguments are <em>formula</em> and <em>data</em>. Formulas in R are a little funny, instead of an = sign, they are expressed with a ~. Let’s fit the model we saw in the lecture notes: <span class="math">\(rentals = \beta_0 + \beta_1*crossing\)</span>. There’s a little snag we have to take care of first. Right now we’ve got repeated measures <em>i.e.</em> one measurement per day, so we need to aggregate again. How do we aggregate over date, but still maintain relevant seasonal data?</p>
+<p>The function for creating a linear model in R is <code>lm()</code> and the primary arguments are <em>formula</em> and <em>data</em>. Formulas in R are a little funny, instead of an = sign, they are expressed with a ~. Let’s fit the model we saw in the lecture notes: <span class="math">\(rentals = \beta_0 + \beta_1*crossing\)</span>. There’s a little snag we have to take care of first. Right now we’ve got repeated measures <em>i.e.</em> one measurement per day, so we need to aggregate again this time over date.</p>
 <pre class="r"><code>rentals_crossing = data %&gt;% 
   group_by(station_start) %&gt;% 
   summarize(mean_rentals = mean(no_rentals),
@@ -362,7 +362,7 @@ summary(model)</code></pre>
 ## Residual standard error: 27.48 on 182 degrees of freedom
 ## Multiple R-squared:  0.3207, Adjusted R-squared:  0.3132 
 ## F-statistic: 42.96 on 2 and 182 DF,  p-value: 5.226e-16</code></pre>
-<p>The model coefficients changed quite a lot when we added in windspeed. The intercept is now negative, and the windspeed coefficient is huge! When interpretting coefficients, it’s important to keep the scale in mind. Windspeed ranges from 0.05 to 0.44 so when you multiply 2036 by 0.05 for example, you end up with about 102, which is within the range we’d expect.</p>
+<p>The model coefficients changed quite a lot when we added in wind speed. The intercept is now negative, and the wind speed coefficient is huge! When interpreting coefficients, it’s important to keep the scale in mind. Wind speed ranges from 0.05 to 0.44 so when you multiply 2036 by 0.05 for example, you end up with about 102, which is within the range we’d expect.</p>
 <p>Let’s try one more, this time we’ll include a factor variable.</p>
 <pre class="r"><code>rentals_multi = data %&gt;% 
   group_by(station_start, is_work_day) %&gt;% 
