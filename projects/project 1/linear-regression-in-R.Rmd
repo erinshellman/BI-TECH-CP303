@@ -13,7 +13,7 @@ output:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+#knitr::opts_chunk$set(cache = TRUE)
 require(dplyr)
 require(ggplot2)
 require(GGally)
@@ -75,10 +75,11 @@ are at the resolution of a day, so we know we're going to have to either
 duplicate or compress data to merge. I vote compress, let's summarize! 
 ```{r}
 head(usage)
-custs_per_day = usage %>% 
-  group_by(time_start = as.Date(time_start), station_start, cust_type) %>% 
-  summarize(no_rentals = n(),
-            duration_mins = mean(duration_mins, na.rm = TRUE))
+custs_per_day = 
+  usage %>% 
+    group_by(time_start = as.Date(time_start), station_start, cust_type) %>% 
+    summarize(no_rentals = n(),
+              duration_mins = mean(duration_mins, na.rm = TRUE))
 
 head(custs_per_day)
 ```
@@ -130,10 +131,11 @@ the lecture notes: $rentals = \beta_0 + \beta_1*crossing$. There's a little snag
 we have to take care of first. Right now we've got repeated measures *i.e.* 
 one measurement per day, so we need to aggregate again this time over date.
 ```{r}
-rentals_crossing = data %>% 
-  group_by(station_start) %>% 
-  summarize(mean_rentals = mean(no_rentals),
-            crossing = mean(crossing))
+rentals_crossing = 
+  data %>% 
+    group_by(station_start) %>% 
+    summarize(mean_rentals = mean(no_rentals),
+              crossing = mean(crossing))
 
 head(rentals_crossing)
 
@@ -167,18 +169,19 @@ section just prints back the model specification, and the *Residuals* section
 contains a summary of the distribution of the errors. The fun stuff is in the
 *Coefficients* section. In the first row contains the covariate names followed 
 by their estimates, standard errors, t- and p-values. Our model ends up being 
-`rentals = 28 + 0.50(crosswalks)` which means that the average number of rentals
-when there are no crosswalks is 28, and the average increases by 1 rental for
-every two additional crosswalks.
+`rentals = 15 + 0.24(crosswalks)` which means that the average number of rentals
+when there are no crosswalks is 15, and the average increases by 1 rental for
+every four additional crosswalks.
 
 We can fit regressions with multiple covariates the same way:
 ```{r}
 # lets include windspeed this time
-rentals_multi = data %>% 
-  group_by(station_start) %>% 
-  summarize(mean_rentals = mean(no_rentals),
-            crossing = mean(crossing),
-            windspeed = mean(windspeed))
+rentals_multi = 
+  data %>% 
+    group_by(station_start) %>% 
+    summarize(mean_rentals = mean(no_rentals),
+              crossing = mean(crossing),
+              windspeed = mean(windspeed))
 
 head(rentals_multi)
 
@@ -194,16 +197,17 @@ summary(model)
 The model coefficients changed quite a lot when we added in wind speed. The 
 intercept is now negative, and the wind speed coefficient is huge! When 
 interpreting coefficients, it's important to keep the scale in mind. Wind speed 
-ranges from 0.05 to 0.44 so when you multiply 2036 by 0.05 for example, you end 
-up with about 102, which is within the range we'd expect.
+ranges from 0.05 to 0.44 so when you multiply 1172 by 0.05 for example, you end 
+up with about 60, which is within the range we'd expect.
 
 Let's try one more, this time we'll include a factor variable.
 ```{r}
-rentals_multi = data %>% 
-  group_by(station_start, is_work_day) %>% 
-  summarize(mean_rentals = mean(no_rentals),
-            crossing = mean(crossing),
-            windspeed = mean(windspeed))
+rentals_multi = 
+  data %>% 
+    group_by(station_start, is_work_day) %>% 
+    summarize(mean_rentals = mean(no_rentals),
+              crossing = mean(crossing),
+              windspeed = mean(windspeed))
 
 head(rentals_multi)
 
@@ -230,20 +234,16 @@ The output looks a little funny now. There's a term called
 `factor(is_work_day)1`, what does that mean? Factors are category variables and 
 their interpretation is relative to a baseline. Our factor `is_work_day` 
 only has two levels, 0 and 1, and R sets 0 to the baseline by default. So the 
-interpretation of that term is that we can expect about 17 additional rentals 
+interpretation of that term is that we can expect about 10 additional rentals 
 when it is a work day (*i.e.* `is_work_day == 0`) and the other variables are
 fixed.
 
-## Train and test data
+## The *caret* package
 
-For all analyses in this class we'll need to divide our data into train and test
-sets. We'll do this using a package called *caret*. Check out 
-[this](http://topepo.github.io/caret/training.html) nice overview for more 
-details.
-
-### The *caret* package
-
-The *caret* package in R contains helper functions that provide a unified 
+We'll be using the *caret* package (short for *c*lassification *a*nd 
+*re*gression *t*raining) for model development because it integrates
+many modeling packages in R into one unified syntax. That means more reusable
+code for us! *caret* contains helper functions that provide a unified 
 framework for data cleaning/splitting, model training, and comparison. I highly
 recommend the 
 [optional reading](https://github.com/erinshellman/BI-TECH-CP303/blob/master/reading/regression/v28i05.pdf)
@@ -262,83 +262,246 @@ rerun them we'll get slightly different answers. Setting the seed to the same
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
 
-### Splitting data into test and train sets
+### Train and test data
 
-In data mining we're interested in creating models for prediction, and we'll 
-assess the quality of our models by quantifying their prediction accuracy. To 
-measure prediction quality, we hold out a portion of our data called the *test*
-set. The *training* data is used to build the model. 
+Before any analysis in this class we'll need to divide our data into train and 
+test sets. Check out 
+[this](http://topepo.github.io/caret/training.html) nice overview for more 
+details. The *training* set is typically about 75% of the data and is used for 
+all the model development. Once we have a model we're satified with, we use our
+*testing* set, the other 25% to generate model predictions. Splitting the data
+into the two groups, train and test, generates two types of errors, in-sample 
+and out-of-sample errors. *In-sample* errors are the errors derived from same 
+data the model was built with. *Out-of-sample* errors are derived from measuring 
+the error on a fresh data set. We are interested in the out-of-sample error 
+because this quantity represents how'd we'd expect the model to perform in the
+future on brand new data.
+
+Here's how to split the data with *caret*:
 ```{r}
 # select the training observations
-in_train = createDataPartition(y = data$no_rentals,
-                                   p = 0.75, # 75% in train, 25% in test.
+in_train = createDataPartition(y = rentals_multi$mean_rentals,
+                                   p = 0.75, # 75% in train, 25% in test
                                    list = FALSE)
 head(in_train) # row indices of observations in the training set
 
-training_set = data[in_train, ]
-testing_set = data[-in_train, ]
+train = rentals_multi[in_train, ]
+test = rentals_multi[-in_train, ]
 
-dim(training_set)
-dim(testing_set)
+dim(train)
+dim(test)
 ```
 
 Note: I recommend doing all data processing and aggregation steps *before* 
 splitting out your train/test sets.
 
-### Fitting / Training
+### Training
 
-A workhorse function in the *caret* package in the `train` function.  This
+Our workhorse function in the *caret* package in the `train` function. This
 function can be used to evaluate performance parameters, choose optimal models 
 based on the values of those parameters, and estimate model performance. For 
 regression we can use it in place of the `lm()` function. Here's our last
 regression model using the train function.
 
 ```{r}
-# select the training observations
-in_train = createDataPartition(y = rentals_multi$mean_rentals,
-                                   p = 0.75,
-                                   list = FALSE)
-head(in_train)
-
-training_set = rentals_multi[in_train, ]
-testing_set = rentals_multi[-in_train, ]
-
 model_fit = train(mean_rentals ~ crossing + windspeed + factor(is_work_day), 
-                  data = training_set, 
+                  data = train, 
                   method = 'lm',
                   metric = 'RMSE') 
-
 print(model_fit)
+summary(model_fit)
 
 # get predictions
-predicted_values = predict(model_fit, newdata = testing_set)
+out_of_sample_predictions = predict(model_fit, newdata = test)
 
 # compare predictions against the observed values
-errors = data.frame(predicted = predicted_values,
-                    observed = testing_set$mean_rentals)
-prediction_error = testing_set$mean_rentals - predicted_values
+errors = data.frame(predicted = out_of_sample_predictions,
+                    observed = test$mean_rentals,
+                    error = out_of_sample_predictions - test$mean_rentals)
 
 # eh, not so good
 ggplot(data = errors, aes(x = predicted, y = observed)) + 
   geom_abline(aes(intercept = 0, slope = 1), 
               size = 3, alpha = 0.70, color = 'red') +
   geom_point(size = 3, alpha = 0.80) +
+  ggtitle('out-of-sample errors') +
   theme_minimal()
 ```
 
-Our prediction accuracy is not so great for this model. The RMSE is about 31
-which means that on average the predictions are off by about 31 rentals.
+Our prediction accuracy is not so great for this model. The RMSE is about 15
+which means that on average the predictions are off by about 15 rentals.
+
+## Parameter tuning
 
 ## Feature Selection
 
-Next time!
+## Which model is the best?
+
+Typically adding more predictors to a model will increase the $R^2$, so using
+that criteria alone will cause you to favor larger models.
 
 ## Project tips
 
-We saw this issue before when we constructed our SLR.
+We saw how to merge the datasets together into one, but it often makes sense to 
+do some aggregation before merging. For example, since we know *usage* needs to 
+be aggregated and summarized to remove the date variable, it makes 
+sense to merge *usage* with the weather data and summarized before merging on 
+the station data.  For example:
+```{r}
+# we made this data frame in the merging section above
+weather_rentals = merge(custs_per_day, weather, 
+                        by.x = 'time_start', by.y = 'date')
 
-model_data = data %>% 
-  group_by(station_start, weekday, season_code, is_holiday, is_work_day, weather_code) %>% 
-  summarize(no_rentals = mean(no_rentals))
+# group_by all the factors and summarize the continuous variables to generate
+# a final data frame that can be merged by station.
+model_data = 
+  weather_rentals %>% 
+    group_by(
+      station_start, 
+      cust_type,
+      weekday, 
+      season_code, 
+      is_holiday, 
+      is_work_day, 
+      weather_code) %>% 
+    summarize(
+      rentals = mean(no_rentals),
+      duration = mean(duration_mins),
+      temp = mean(temp),
+      subjective_temp = mean(subjective_temp),
+      humidity = mean(humidity),
+      windspeed = mean(windspeed))
 
 head(model_data)
+   
+# now merge on stations
+final_data = merge(model_data, stations, 
+  by.x = 'station_start',
+  by.y = 'station')
+  
+data = final_data
+rm(final_data)
+
+# remove variables from the data that won't be used for modeling, e.g. lat/long
+data_to_model = 
+  data %>%
+    select(-station_start, -id, -terminal_name, -lat, -long)
+
+dim(data_to_model)
+head(data_to_model)
+
+model = lm(rentals ~ ., data = data_to_model)
+summary(model)
+
+# hmm, we have some weirdness in there, some stations features don't exist 
+# around any of our stations, e.g. 'turning_loop'
+table(data_to_model$turning_loop)
+
+# lets remove those using the handly 'colSums' and 'which' functions
+colSums(data_to_model[ , 15:143])
+
+# we want to know 'which' columns have a sum of 0
+columns_to_remove = names(which(colSums(data_to_model[ , 15:143]) == 0))
+
+# now combine that with filter to remove those from our data
+data_to_model = data_to_model[ , !(names(data_to_model) %in% columns_to_remove)]
+
+# try the model again
+model = lm(rentals ~ ., data = data_to_model)  
+summary(model)
+
+# definintely better, but we still have some weird NAs, lets troubleshoot those
+table(data_to_model$vending_machine)
+table(data_to_model$storage)
+table(data_to_model$dojo)
+table(data_to_model$tax_service)
+table(data_to_model$telephone)
+
+# all the landmarks have at most 1 in the area, so there are not enough 
+# observations for least square to fit the model.
+# these variables won't be helpful in prediction, so lets remove them.
+
+data_to_model = 
+  data_to_model %>% 
+  select(
+    -vending_machine, 
+    -storage,
+    -dojo,
+    -tax_service,
+    -telephone)
+    
+# try the model again
+model = lm(rentals ~ ., data = data_to_model)  
+summary(model)
+
+# one last modification. our categorical variables are being treated like 
+# they're continuous. lets create some factors
+data_to_model$weekday = factor(data_to_model$weekday, 
+                               labels = 0:6, 
+                               levels = 0:6)
+data_to_model$season_code = factor(data_to_model$season_code)
+data_to_model$is_holiday = factor(data_to_model$is_holiday)
+data_to_model$is_work_day = factor(data_to_model$is_work_day)
+data_to_model$weather_code = factor(data_to_model$weather_code)
+
+# try the model again
+model = lm(rentals ~ ., data = data_to_model)  
+summary(model)
+
+# now 'is_work_day1' is NA, what gives?! remember the assumptions of linear 
+# regression. our covariates must be independent - that is, not correlated. in
+# this case if you know the values of weekday, you know the value of 
+# is_work_day so that assumption doesn't hold. get rid of it!
+data_to_model$is_work_day = NULL
+
+# try the model again
+model = lm(rentals ~ ., data = data_to_model)  
+summary(model)
+
+# ok, we've successfully hit a model but boy does it have a lot of predictors
+# lets start evaluating the predictive accuracy
+
+# select the training observations
+in_train = createDataPartition(y = data_to_model$rentals,
+                                   p = 0.75,
+                                   list = FALSE)
+
+train = data_to_model[in_train, ]
+test = data_to_model[-in_train, ]
+
+# when we train with the lm function, we get the same results as using lm()
+model_fit = train(rentals ~ ., 
+                  data = train, 
+                  method = 'lm',
+                  metric = 'RMSE') 
+
+# view the relative importance of the predictors
+plot(varImp(model_fit), top = 20)
+
+rentals_predicted = predict(model_fit, newdata = test)
+
+prediction = data.frame(rentals_predicted,
+                        rentals_observed = test$rentals,
+                        error = rentals_predicted - test$rentals)
+summary(prediction$error)
+
+ggplot(data = prediction, aes(x = rentals_predicted, y = rentals_observed)) + 
+  geom_point(size = 3, alpha = 0.80) +
+  geom_abline(aes(intercept = 0, slope = 1), 
+              size = 3, alpha = 0.70, color = 'red') +
+  geom_smooth() +
+  theme_minimal()
+
+ggplot(data = filter(prediction, rentals_predicted > 0), aes(x = rentals_predicted, y = rentals_observed)) + 
+  geom_point(size = 3, alpha = 0.80) +
+  geom_abline(aes(intercept = 0, slope = 1), 
+              size = 3, alpha = 0.70, color = 'red') +
+  geom_smooth() +
+  theme_minimal()
+
+ggplot(data = filter(prediction, rentals_predicted > 0), aes(x = rentals_predicted, y = error)) + 
+  geom_point(size = 3, alpha = 0.80) +
+  geom_smooth() +
+  theme_minimal()
+```
+
