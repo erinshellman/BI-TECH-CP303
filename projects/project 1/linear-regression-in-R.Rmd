@@ -2,12 +2,47 @@
 title: "Linear regression in R"
 author: "Erin Shellman"
 date: "April 13 & 20, 2015"
-output: html_document
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
 ---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+require(dplyr)
+require(ggplot2)
+require(GGally)
+require(scales)
+require(lubridate)
+require(caret)
+
+setwd('~/projects/BI-TECH-CP303/projects/project 1')
+usage = read.delim('./data/usage_2012.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+stations = read.delim('./data/stations.tsv',
+                   sep = '\t',
+                   header = TRUE)
+
+weather = read.delim('./data/daily_weather.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
 
 ## Linear regression 
 
-http://topepo.github.io/caret/Linear_Regression.html
+In this tutorial we'll learn:
+
+* how to `merge` datasets
+* how to fit linear regression models
+* how to split data into test and train sets
+* how to tune our models and select features
 
 ### Data preparation
 
@@ -31,36 +66,19 @@ stations = read.delim('stations.tsv',
                    header = TRUE)
 ```
 
-```{r, echo = FALSE}
-library(dplyr)
-library(ggplot2)
-library(lubridate)
-
-setwd('~/projects/BI-TECH-CP303/projects/project 1')
-usage = read.delim('./data/usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-stations = read.delim('./data/stations.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-weather = read.delim('./data/daily_weather.tsv',
-                   sep = '\t',
-                   header = TRUE)
-```
-
 ### Merging data
 
 We have three related datasets to work with, but we can't really get started 
-until we figure out how to combine them. Let's start with *usage* and *weather*.
+until they're combined. Let's start with *usage* and *weather*.
 The *usage* dataframe is at the resolution of the hour, while the *weather* data
 are at the resolution of a day, so we know we're going to have to either 
 duplicate or compress data to merge. I vote compress, let's summarize! 
 ```{r}
+head(usage)
 custs_per_day = usage %>% 
-  group_by(time_start = as.Date(time_start), station_start) %>% 
-  summarize(no_rentals = n())
+  group_by(time_start = as.Date(time_start), station_start, cust_type) %>% 
+  summarize(no_rentals = n(),
+            duration_mins = mean(duration_mins, na.rm = TRUE))
 
 head(custs_per_day)
 ```
@@ -71,10 +89,11 @@ Perfection, now we can merge!  What's the key?
 custs_per_day$time_start = ymd(custs_per_day$time_start)
 weather$date = ymd(weather$date)
 
+# then merge. see ?merge for more details about the function
 weather_rentals = merge(custs_per_day, weather, 
                         by.x = 'time_start', by.y = 'date')
 
-# I like to check dimensions after to make sure they are what I'd expect
+# check dimensions after to make sure they are what you expect
 dim(custs_per_day)
 dim(weather)
 dim(weather_rentals)
@@ -90,10 +109,12 @@ final_data = merge(weather_rentals, stations,
 dim(final_data)
 dim(weather_rentals)
 
-head(final_data)
+head(final_data[, 1:30])
 
 # probably want to save this now!
-write.table(final_data, 'bikeshare_modeling_data.tsv', row.names = FALSE, sep = '\t')
+write.table(final_data, 
+            'bikeshare_modeling_data.tsv', 
+            row.names = FALSE, sep = '\t')
 
 # rename to something more convenient and remove from memory
 data = final_data
@@ -102,16 +123,137 @@ rm(final_data)
 
 ### The `lm()` function
 
-## Test and Train data
+The function for creating a linear model in R is `lm()` and the primary 
+arguments are *formula* and *data*. Formulas in R are a little funny,
+instead of an = sign, they are expressed with a ~. Let's fit the model we saw in
+the lecture notes: $rentals = \beta_0 + \beta_1*crossing$. There's a little snag 
+we have to take care of first. Right now we've got repeated measures *i.e.* 
+one measurement per day, so we need to aggregate again this time over date.
+```{r}
+rentals_crossing = data %>% 
+  group_by(station_start) %>% 
+  summarize(mean_rentals = mean(no_rentals),
+            crossing = mean(crossing))
+
+head(rentals_crossing)
+
+# plot it
+ggplot(rentals_crossing, aes(x = crossing, y = mean_rentals)) +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 4, alpha = 0.60) +
+  theme_minimal()
+
+model = lm(mean_rentals ~ crossing, data = rentals_crossing)
+
+# view what is returned in the lm object
+attributes(model)
+
+# get model output
+summary(model)
+
+# print model diagnostics
+par(mfrow = c(2, 2))
+plot(model)
+```
+
+The `attributes()` function can be called on just about any object in R and it
+returns a list of all the things inside. It's a great way to explore 
+objects and see what values are contained inside that could be used in other 
+analysis. For example, extracting the residuals via `model$residuals` is useful
+if we want to print diagnostic plots like those above.
+
+When we run `summary()` on the `lm` object, we see the results. The *Call*
+section just prints back the model specification, and the *Residuals* section
+contains a summary of the distribution of the errors. The fun stuff is in the
+*Coefficients* section. In the first row contains the covariate names followed 
+by their estimates, standard errors, t- and p-values. Our model ends up being 
+`rentals = 28 + 0.50(crosswalks)` which means that the average number of rentals
+when there are no crosswalks is 28, and the average increases by 1 rental for
+every two additional crosswalks.
+
+We can fit regressions with multiple covariates the same way:
+```{r}
+# lets include windspeed this time
+rentals_multi = data %>% 
+  group_by(station_start) %>% 
+  summarize(mean_rentals = mean(no_rentals),
+            crossing = mean(crossing),
+            windspeed = mean(windspeed))
+
+head(rentals_multi)
+
+ggplot(rentals_multi, aes(x = windspeed, y = mean_rentals)) +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 4, alpha = 0.60) +
+  theme_minimal()
+
+model = lm(mean_rentals ~ crossing + windspeed, data = rentals_multi)
+summary(model)
+```
+
+The model coefficients changed quite a lot when we added in wind speed. The 
+intercept is now negative, and the wind speed coefficient is huge! When 
+interpreting coefficients, it's important to keep the scale in mind. Wind speed 
+ranges from 0.05 to 0.44 so when you multiply 2036 by 0.05 for example, you end 
+up with about 102, which is within the range we'd expect.
+
+Let's try one more, this time we'll include a factor variable.
+```{r}
+rentals_multi = data %>% 
+  group_by(station_start, is_work_day) %>% 
+  summarize(mean_rentals = mean(no_rentals),
+            crossing = mean(crossing),
+            windspeed = mean(windspeed))
+
+head(rentals_multi)
+
+# plot crossings, colored by is_work_day
+ggplot(rentals_multi, 
+       aes(x = crossing, y = mean_rentals, color = factor(is_work_day))) +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 4, alpha = 0.60) +
+  theme_minimal()
+
+# plot windspeed, colored by is_work_day
+ggplot(rentals_multi, 
+       aes(x = windspeed, y = mean_rentals, color = factor(is_work_day))) +
+  geom_smooth(method = 'lm', size = 2) +
+  geom_point(size = 4, alpha = 0.60) +
+  theme_minimal()
+
+model = lm(mean_rentals ~ crossing + windspeed + factor(is_work_day), 
+           data = rentals_multi)
+summary(model)
+```
+
+The output looks a little funny now. There's a term called 
+`factor(is_work_day)1`, what does that mean? Factors are category variables and 
+their interpretation is relative to a baseline. Our factor `is_work_day` 
+only has two levels, 0 and 1, and R sets 0 to the baseline by default. So the 
+interpretation of that term is that we can expect about 17 additional rentals 
+when it is a work day (*i.e.* `is_work_day == 0`) and the other variables are
+fixed.
+
+## Train and test data
+
+For all analyses in this class we'll need to divide our data into train and test
+sets. We'll do this using a package called *caret*. Check out 
+[this](http://topepo.github.io/caret/training.html) nice overview for more 
+details.
 
 ### The *caret* package
 
 The *caret* package in R contains helper functions that provide a unified 
-framework for data cleaning/splitting, and model training and comparison.  
+framework for data cleaning/splitting, model training, and comparison. I highly
+recommend the 
+[optional reading](https://github.com/erinshellman/BI-TECH-CP303/blob/master/reading/regression/v28i05.pdf)
+this week which provides a great overview of the *caret* package.
 
-```{r}
+```{r, eval = FALSE}
 install.packages('caret', dependencies = TRUE)
 library(caret)
+
+set.seed(1234) # set a seed
 ```
 
 Setting a seed in R insures that you get identical results each time you run
@@ -125,10 +267,8 @@ that's helpful for debugging.
 In data mining we're interested in creating models for prediction, and we'll 
 assess the quality of our models by quantifying their prediction accuracy. To 
 measure prediction quality, we hold out a portion of our data called the *test*
-set. The *training* data is used to build the model.
+set. The *training* data is used to build the model. 
 ```{r}
-set.seed(1234) # set a seed
-
 # select the training observations
 in_train = createDataPartition(y = data$no_rentals,
                                    p = 0.75, # 75% in train, 25% in test.
@@ -142,113 +282,63 @@ dim(training_set)
 dim(testing_set)
 ```
 
-```{r}
+Note: I recommend doing all data processing and aggregation steps *before* 
+splitting out your train/test sets.
 
-model_fit = train(no_rentals ~., data = select(training_set, -station_start, -time_start, -season_code, -weather_code), method = 'lm') 
-
-model_fit = lm(no_rentals ~ factor(is_holiday) + temp + grave_yard, data = data)
-model_fit = lm(no_rentals ~ factor(is_holiday) + temp + bar, data = data)
-summary(model_fit)
-
-```
-
-## Exploratory
-
-featurePlot()
-
-Plotting notes:
-
-Makes your plots only on the training set and don't use the test set for 
-exploration.
-
-You're looking for imbalances in the outcome/predictors
-outliers, groups of points not explained by a predictor, skewness.
-
-
-#### Preprocessing
-
-###### Skew
-
-During your exploration, you might encounter skewness.  One tell-tale sign is a 
-mean and median being very different.  Or a distribution with a large standard
-deviation relative its mean.  One way to handle situations like this is to 
-standardize your data.  Can use `scale`.  One thing to note is that if you
-standardize your training set, you must identically standardize your testing set.
-In the case of center scaling, the mean you subtract off and the standard 
-deviation you divide by are the mean and standard deviation computed with the
-training set, **not** the test set.  That means your average value might not be
-distributed exactly $ N(0, 1) $.
-
-preprocessor = preProcess(taining[ , cols], method = c('center', 'scale'))
-test_set_processed = predict(preprocessor, testing[ , cols])
-
-###### Missingness
-
-preProcess(taining, method = 'knnImpute')
-
-## Fitting / Training
+### Fitting / Training
 
 A workhorse function in the *caret* package in the `train` function.  This
 function can be used to evaluate performance parameters, choose optimal models 
-based on the values of those parameters, and estimate model performance.
+based on the values of those parameters, and estimate model performance. For 
+regression we can use it in place of the `lm()` function. Here's our last
+regression model using the train function.
 
 ```{r}
-#model_fit = train(type ~., data = training_set, method = 'glm')
-#model_fit = train(Fertility ~., data = swiss, method = 'lm') 
-#summary(model_fit)
+# select the training observations
+in_train = createDataPartition(y = rentals_multi$mean_rentals,
+                                   p = 0.75,
+                                   list = FALSE)
+head(in_train)
+
+training_set = rentals_multi[in_train, ]
+testing_set = rentals_multi[-in_train, ]
+
+model_fit = train(mean_rentals ~ crossing + windspeed + factor(is_work_day), 
+                  data = training_set, 
+                  method = 'lm',
+                  metric = 'RMSE') 
+
+print(model_fit)
+
+# get predictions
+predicted_values = predict(model_fit, newdata = testing_set)
+
+# compare predictions against the observed values
+errors = data.frame(predicted = predicted_values,
+                    observed = testing_set$mean_rentals)
+prediction_error = testing_set$mean_rentals - predicted_values
+
+# eh, not so good
+ggplot(data = errors, aes(x = predicted, y = observed)) + 
+  geom_abline(aes(intercept = 0, slope = 1), 
+              size = 3, alpha = 0.70, color = 'red') +
+  geom_point(size = 3, alpha = 0.80) +
+  theme_minimal()
 ```
 
-Explain the output.
-
-## Prediction
-
-```{r}
-#predictions = predict(model_fit, newdata = testing_set)
-
-```
-
-## Diagnostics
-
-The `confusionMatrix` function prints a lot of diagnostic measures that you
-might want to evaluate when developing your models.
-
-```{r}
-#confusionMatrix(predictions, testing_set$type)
-
-```
+Our prediction accuracy is not so great for this model. The RMSE is about 31
+which means that on average the predictions are off by about 31 rentals.
 
 ## Feature Selection
 
-Feature extraction at its most basic level is done by the context of the problem
-being solved. If you're trying to estimate the time of day when load on a 
-server will near capacity, the features you include in your data will naturally 
-be related.  Time, number of requests per second.
-
-Feature creation can also be done via exploratory analysis as trends and 
-patterns emerge.
-
-dummyVars()
-nearZeroVar()
-
-## Linear regression extensions
-
-Lots of regression methods [here](http://topepo.github.io/caret/Linear_Regression.html).
-
-Forward selection
-model_fit = train(Fertility ~., data = swiss, method = 'leapForward') 
-Stepwise selection
-model_fit = train(Fertility ~., data = swiss, method = 'leapSeq') 
-partial least squares
-model_fit = train(Fertility ~., data = swiss, method = 'pls') 
-penalized linear regression
-model_fit = train(Fertility ~., data = swiss, method = 'penalized') 
-lasso
-model_fit = train(Fertility ~., data = swiss, method = 'lass') 
+Next time!
 
 ## Project tips
 
-Provide them with some guidance, suggestions and code snippets for the project.
+We saw this issue before when we constructed our SLR.
 
+model_data = data %>% 
+  group_by(station_start, weekday, season_code, is_holiday, is_work_day, weather_code) %>% 
+  summarize(no_rentals = mean(no_rentals))
 
-
-
+head(model_data)
