@@ -27,13 +27,12 @@ When you turn in your project reports, you will receive the reports of three of 
 
 | Assignment |   Date   |
 |-----------|----------|
-| [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | April 27 | 
-| Project 1 Critiques | May 4 | 
-| Project 2 | May 11   | 
-| Project 2 Critiques | May 18 | 
-| Project 3 | June 1   | 
-| Project 3 Critiques | June June 8 | 
-| Project 4 | June 15  |
+| [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | May 4 | 
+| Project 1 Critiques | May 11 | 
+| Project 2 | May 18   | 
+| Project 2 Critiques | June 1 | 
+| Project 3 | June 8   | 
+| Project 3 Critiques | June 15 | 
 
 ## Textbook
 
@@ -68,3 +67,8 @@ We'll be using the statistical programming language R for this course. In additi
 
 1. [Download and install R](http://cran.cnr.berkeley.edu/)
 2. [Download and install RStudio](http://www.rstudio.com/products/rstudio/download/)
+
+
+## Office Hours
+
+Office hours will be held on Sundays from 2 to 4pm at [Caffe Zingaro](https://www.google.com/maps/place/Caff%C3%A9+Zingaro/@47.624402,-122.354347,17z/data=!3m1!4b1!4m7!1m4!3m3!1s0x54901543e1fd1721:0x5a0ae923350c2a94!2sCaff%C3%A9+Zingaro!3b1!3m1!1s0x54901543e1fd1721:0x5a0ae923350c2a94) in Lower Queen Anne.
