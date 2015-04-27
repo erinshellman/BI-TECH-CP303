@@ -1,15 +1,15 @@
 ---
 title: "Linear regression in R"
 author: "Erin Shellman"
-date: "April 13 & 20, 2015"
+date: "April 13 - 27, 2015"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
@@ -249,9 +249,11 @@ datais_holiday = factor(data$is_holiday)
 data$weather_code = factor(data$weather_code)
 ```
 
-For this section, we'll use the fully cleaned and comined data from the 
-[project-1-data-cleanup]() file, so make sure you've gone through and cleaned
-your data up like that, or download the clean file from []().
+For this section, we'll use the fully cleaned and combined data from the 
+[project-1-data-cleanup](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/project-1-data-cleanup.Rmd) 
+file, so make sure you've gone through and cleaned
+your data up like that, or download the clean file from 
+[here](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/final_modeling_data.tsv).
 
 ```{r, eval = FALSE}
 data = read.delim('final_modeling_data.tsv', sep = '\t', header = TRUE)
@@ -279,34 +281,13 @@ rerun them we'll get slightly different answers. Setting the seed to the same
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
 
-### Preprocessing
-
-Many methods work best when the predictors are normalized to be on the same 
-scale. This is often done by centering or scaling the data. You center a 
-variable by subtracting the mean of the variable from from each observation. To
-scale your observations you then divide the centered observation by the variable
-standard deviation. Now the variable follows a standard normal distribution with
-mean = 0 and standard deviation = 1.
-
-Centering and scaling
-is straightforward in R, but The *caret* package 
-has lots of convenient functions for 
-[preprocessing data](http://topepo.github.io/caret/preprocess.html).
-
-#### Converting factors to dummy variables
-
-We run into some trouble if we try to just center and scale the data because its
-got factor variables and you can't really subtract anything from a category.
-
-x = dummyVars(~ cust_type + weekday + season_code + is_holiday + weather_code, data = data)
-
 ### Train and test data
 
 Before any analysis in this class we'll need to divide our data into train and 
 test sets. Check out 
 [this](http://topepo.github.io/caret/training.html) nice overview for more 
 details. The *training* set is typically about 75% of the data and is used for 
-all the model development. Once we have a model we're satified with, we use our
+all the model development. Once we have a model we're satisfied with, we use our
 *testing* set, the other 25% to generate model predictions. Splitting the data
 into the two groups, train and test, generates two types of errors, in-sample 
 and out-of-sample errors. *In-sample* errors are the errors derived from same 
@@ -372,8 +353,7 @@ rentals. Let's fit the giant model we made before:
 ```{r}
 full_model = train(rentals ~ ., 
                   data = train, 
-                  method = 'lm',
-                  metric = 'RMSE') 
+                  method = 'lm') 
 ```
 
 The in-sample RMSE is about 19, so definitely an improvement over the previous 
@@ -381,141 +361,283 @@ model, but this model is really complex and probably not going to be usable by
 Pronto. How can we reduce the complexity of the model, but maintain reasonable
 predictive accuracy?
 
-## Model tuning
+### Preprocessing
+
+Shrinkage methods require that the predictors are normalized to be on the same 
+scale. We can accomplish this by centering and scaling the data. You center a 
+variable by subtracting the mean of the variable from from each observation. To
+scale your observations you then divide the centered observation by the variable
+standard deviation. Now the variable follows a standard normal distribution with
+mean = 0 and standard deviation = 1.
+
+The *caret* package has lots of convenient functions for 
+[preprocessing data](http://topepo.github.io/caret/preprocess.html), check 'em 
+out!
+
+#### Converting factors to dummy variables
+
+We run into some trouble if we try to just center and scale the data because its
+got factor variables and you can't subtract a number from a category. We can 
+use the `model.matrix` function to fix that really quickly.
+
+```{r, warning = FALSE}
+no_factors = as.data.frame(model.matrix(rentals ~ . -1, data = data))
+
+# put rentals back on
+no_factors$rentals = data$rentals
+
+full_model_scaled = train(rentals ~ ., 
+                  data = no_factors, 
+                  method = 'lm',
+                  preProcess = c('center', 'scale'))
+```
+
+Coefficients estimated with normalized data have a different interpretation than
+coefficients from un-normalized data. In this case when the data are scaled the 
+intercept has a better interpretation, it's the expected number of rentals when 
+all the predictors are at their average value. So, in this case, when all the 
+predictors are at their average values, we expect about 21 rentals per day. 
+In the previous full-model we had an intercept of about -28, which could be 
+interpreted as the expected number of rentals when all the other predictors 
+have a value of 0. That's pretty unsatisfying for a couple reasons. First, we 
+can't have negative rentals! Second, for a lot of the predictors it doesn't make 
+sense to plug in 0's. What does it mean to have a duration of 0? Or a temp of 0?
+Centering and scaling fix the non-interpret ability of the previous models.
+
+Since we divide by the standard deviation during scaling, the non-intercept 
+coefficients in the centered and scaled model can be interpreted as the 
+increase in $y$ associated with a 1 standard deviation increase in $x$.
+
+## Model Selection
 
 ### Variable combination
 
-The selection and shrinkage methods were cool, but a simpler method might be to 
-just combine some of the variables. For example the dataset contains a variable
-for *alcohol*, *pub* and *bar*, likewise there's a variable for *food_court*,
-*restaurant*, *food_cart*, and *fast_food*. Maybe we can retain more of the 
-variables by combining some that are pretty similar.
+A simple method to reduce model complexity is to combine some of the variables. 
+For example the dataset contains a variable for *alcohol*, *pub* and *bar*, 
+likewise there's a variable for *food_court*,
+*restaurant*, *food_cart*, and *fast_food*. Maybe we can retain information
+and remove some variables.
 
-```{r}
-data$food = data$fast_food + data$restaurant + data$food_court + 
-  data$bar.restaurant + data$cafe + data$food_cart 
+```{r, warning = FALSE}
+no_factors$food = no_factors$fast_food + no_factors$restaurant + 
+  no_factors$food_court + no_factors$bar.restaurant + 
+  no_factors$cafe + no_factors$food_cart 
 
-data$nightlife = data$bar + data$club + data$pub + data$nightclub 
+no_factors$nightlife = no_factors$bar + no_factors$club + 
+  no_factors$pub + no_factors$nightclub 
 
-data$seedy_stuff = data$stripclub + data$strip_club + data$alcohol + 
-  data$check_cashing + data$motel + data$hostel
+no_factors$seedy_stuff = no_factors$stripclub + no_factors$strip_club + 
+  no_factors$alcohol + no_factors$check_cashing + no_factors$motel + 
+  no_factors$hostel
 
-data$tourism = data$theatre + data$arts_centre + data$tourist + 
-  data$school..historic. + data$hotel + data$gallery + data$artwork + 
-  data$sculpture + data$museum + data$tour_guide + data$car_rental + 
-  data$guest_house + data$landmark + data$attraction + data$information
+no_factors$tourism = no_factors$theatre + no_factors$arts_centre + 
+  no_factors$tourist + no_factors$school..historic. + no_factors$hotel + 
+  no_factors$gallery + no_factors$artwork + no_factors$sculpture + 
+  no_factors$museum + no_factors$tour_guide + no_factors$car_rental + 
+  no_factors$guest_house + no_factors$landmark + no_factors$attraction + 
+  no_factors$information
 
-dim(data)
-# now remove those variables from the dataset
-data = 
-  data %>%
-    select(-fast_food, -restaurant, -food_court, -bar.restaurant, -cafe, 
-           -food_cart, -bar, -club, -pub, -nightclub, -stripclub, -strip_club, 
-           -alcohol, -check_cashing, -motel, -hostel, -theatre, -arts_centre, 
-           -tourist, -school..historic., -hotel, -gallery, -artwork, -sculpture, 
-           -museum, -tour_guide, -car_rental, -guest_house, -landmark, 
-           -attraction, -information)
+dim(no_factors)
 
-# Reduced the dataset by 29 variables!
-dim(data)
+# now remove those variables from the no_factorsset
+no_factors = 
+  no_factors %>%
+  select(-fast_food, -restaurant, -food_court, -bar.restaurant, -cafe, 
+         -food_cart, -bar, -club, -pub, -nightclub, -stripclub, -strip_club, 
+         -alcohol, -check_cashing, -motel, -hostel, -theatre, -arts_centre, 
+         -tourist, -school..historic., -hotel, -gallery, -artwork, -sculpture, 
+         -museum, -tour_guide, -car_rental, -guest_house, -landmark, 
+         -attraction, -information)
+
+# Reduced the dataset by 31 variables!
+dim(no_factors)
 ```
 
-Feel free to make your own categories, there are just a few to get you started.
+Try out your own categories, these are just a few to get you started.
 We'll learn how to make categories computationally when we cover clustering.
 
 We've change the dataframe, don't forget to redefine the train and test sets!
-```{r}
-train = data[in_train, ]
-test = data[-in_train, ]
+```{r, warning = FALSE}
+train = no_factors[in_train, ]
+test = no_factors[-in_train, ]
 
 dim(train)
 dim(test)
 
-# How does our new full-model compare?
+# how does our new full-model compare?
 full_model = train(rentals ~ ., 
                   data = train, 
-                  method = 'lm',
-                  metric = 'RMSE') 
+                  method = 'lm') 
 ```
-
-The new in-sample RMSE is about 20, not much different than the more complex 
-full-model.
-
-### Shrinkage
-
-Ridge regression 
-```{r}
-ridge_grid = data.frame(.lambda = seq(0, .1, length = 15))
-
-# ridge regression
-ridge_model1 = train(rentals ~ ., 
-                  data = train, 
-                  method = 'ridge')
-
-# ridge regression with variable selection
-ridge_model2 = train(rentals ~ ., 
-                  data = train, 
-                  method = 'foba')
-
-print(ridge_model)
-plot(ridge_model)
-
-ridge_model$finalModel
-
-ridge_predictions = predict(ridge_model, newdata = test)
-
-# compare predictions against the observed values
-errors = data.frame(predicted = ridge_predictions,
-                    observed = test$rentals,
-                    error = ridge_predictions - test$rentals)
-
-# eh, not so good
-ggplot(data = errors, aes(x = predicted, y = observed)) + 
-  geom_abline(aes(intercept = 0, slope = 1), 
-              size = 3, alpha = 0.70, color = 'red') +
-  geom_point(size = 3, alpha = 0.80) +
-  ggtitle('out-of-sample errors') +
-  theme_minimal()
-
-```
-
-The ridge regression output 
 
 ### Subset selection
 
 We haven't talked much about computational limitations yet, but it's a good 
 time to start. Selection methods can be *extremely* slow. Why? Because we have 
-$2^p = 2^117$ possible combinations of variables can be made. So, I recommend
-doing some combining before trying out these methods.
+$2^p = 2^{117}$ possible variable combinations. I recommend
+doing some combining before trying these methods. I'll leave the combining 
+up to you, but to make sure these models can run in less than infinite time,
+I'm going to remove a bunch of predictors so you get the idea.
 
-```{r, eval = FALSE}
+```{r, warning = FALSE}
+train = 
+  train %>% 
+    select(rentals, cust_typeCasual, cust_typeRegistered, cust_typeSubscriber, 
+           weekday1, weekday2, weekday3, weekday4, weekday5, weekday6, 
+           season_code2, season_code3, season_code4, is_holiday, weather_code2, 
+           weather_code3, humidity, windspeed, temp, duration, food, nightlife, 
+           seedy_stuff, tourism) 
+
+test = 
+  test %>% 
+    select(rentals, cust_typeCasual, cust_typeRegistered, cust_typeSubscriber, 
+           weekday1, weekday2, weekday3, weekday4, weekday5, weekday6, 
+           season_code2, season_code3, season_code4, is_holiday, weather_code2, 
+           weather_code3, humidity, windspeed, temp, duration, food, nightlife, 
+           seedy_stuff, tourism)
+
+# forward selection
 forward_model = train(rentals ~ ., 
-                  data = train,  
-                  metric = 'leapForward',
-                  nvmax = 10) 
+                      data = na.omit(train),  
+                      method = 'leapForward',
+                      preProcess = c('center', 'scale'),
+                      # try models of size 1 - 23
+                      tuneGrid = expand.grid(nvmax = 1:23),
+                      trControl = trainControl(method = 'cv', number = 5)) 
 
+# what does this return?
+attributes(forward_model)
+
+# what what should the number of variables, k, be?
+forward_model$bestTune
+
+# what metric was used?
+forward_model$metric
+
+# here's a handful of other useful plots and summaries
+print(forward_model)
+summary(forward_model)
+plot(forward_model)
+plot(varImp(forward_model))
+
+# compare all the models
+plot(forward_model$finalModel, scale = 'adjr2')
+
+# backward_selection
 backward_model = train(rentals ~ ., 
-                  data = train,  
-                  metric = 'leapBackward',
-                  nvmax = 10) 
+                       data = na.omit(train),  
+                       method = 'leapBackward',
+                       preProcess = c('center', 'scale'),
+                       tuneGrid = expand.grid(nvmax = 1:23),
+                       trControl = trainControl(method = 'cv', number = 5)) 
 
-both_model = train(rentals ~ ., 
-                  data = train,  
-                  metric = 'leapSeq',
-                  nvmax = 10) 
+plot(backward_model)
+plot(backward_model$finalModel, scale = 'adjr2')
+plot(varImp(backward_model, scale = TRUE))
+
+# steps in both directions
+hybrid_model = train(rentals ~ ., 
+                     data = na.omit(train),  
+                     method = 'leapSeq',
+                     preProcess = c('center', 'scale'),
+                     tuneGrid = expand.grid(nvmax = 1:23),
+                     trControl = trainControl(method = 'cv', number = 5)) 
+
+plot(hybrid_model)
+plot(hybrid_model$finalModel, scale = 'adjr2')
+plot(varImp(hybrid_model))
 ```
 
-```{r, eval = FALSE}
-# warning, this function could take a long while! might want to run over night.
-step_model = train(rentals ~ ., 
-                  data = train, 
-                  method = 'lmStepAIC') 
+### Shrinkage
+
+#### Ridge regression 
+
+```{r}
+# ridge regression
+ridge_model = train(rentals ~ ., 
+                    data = train, 
+                    method = 'ridge',
+                    preProcess = c('center', 'scale'),
+                    tuneLength = 10,
+                    # reducing the cv for speed
+                    trControl = trainControl(method = 'cv', number = 5))
+
+print(ridge_model)
+plot(ridge_model)
+plot(ridge_model$finalModel)
+plot(varImp(ridge_model))
+
+# get the coefficients for the model
+# NOTE: shrinkage methods don't have intercept terms
+ridge_coefs = predict(ridge_model$finalModel, type = 'coef', mode = 'norm')$coefficients
+
+# ridge regression with variable selection
+ridge_model2 = train(rentals ~ ., 
+                     data = train, 
+                     method = 'foba',
+                     preProcess = c('center', 'scale'),
+                     tuneLength = 10,
+                     trControl = trainControl(method = 'cv', number = 5))
+
+print(ridge_model2)
+plot(ridge_model2)
+plot(varImp(ridge_model2))
 ```
 
-## Which model is the best?
+Selection, ridge regression, and lasso are just a couple techniques at our
+disposal for decreasing our model size. See 
+[this page](http://topepo.github.io/caret/Feature_Selection_Wrapper.html) for
+a list of other available options to try out if you like.
 
-Typically adding more predictors to a model will increase the $R^2$, so using
-that criteria alone will cause you to favor larger models.
+#### Lasso 
+```{r}
+lasso_model = train(rentals ~ ., 
+                    data = na.omit(train),
+                    method = 'lasso',
+                    preProc = c('scale', 'center'),
+                    tuneLength = 10,
+                    trControl = trainControl(method = 'cv', number = 5))
+
+print(lasso_model)
+plot(lasso_model)
+plot(varImp(lasso_model))
+plot(lasso_model$finalModel)
+
+# get the model coefficients
+lasso_coefs = predict(lasso_model$finalModel, type = 'coef', mode = 'norm')$coefficients
+```
+
+## Measuring predictive accuracy
+
+All right, now we've got a nice collection of models. Which one should we 
+report?
+
+```{r}
+results = resamples(list(forward_selection = forward_model, 
+                               backward_selection = backward_model, 
+                               hybrid_selection = hybrid_model,
+                               ridge_regression = ridge_model,
+                               lasso_regeression = lasso_model))
+
+# compare RMSE and R-squared
+summary(results)
+
+# plot results
+dotplot(results)
+```
+
+Those are in-sample statistics however, so if we want to compare the model's
+out-of-sample prediction accuracy, we need to compute the RMSE using the test
+data we held out. Let's compare two models: backward selection and 
+lasso:
+```{r}
+backward_predictions = predict(backward_model, test)
+sqrt(mean((backward_predictions - test$rentals)^2 , na.rm = TRUE))
+
+lasso_predictions = predict(lasso_model, test)
+sqrt(mean((lasso_predictions - test$rentals)^2 , na.rm = TRUE))
+
+```
 
 ## Project tips
 
@@ -523,3 +645,6 @@ Check out this list of different model selection methods and try a couple out.
 
   * How do they work?
   * Which works best?
+  
+Once you've spent some time exploring candidate models, pick one and use it in
+your report.
