@@ -3,17 +3,17 @@ title: "Linear regression in R"
 author: "Erin Shellman"
 date: "April 13 & 20, 2015"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
-#knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
 require(dplyr)
 require(ggplot2)
 require(GGally)
@@ -204,44 +204,61 @@ Let's try one more, this time we'll include a factor variable.
 ```{r}
 rentals_multi = 
   data %>% 
-    group_by(station_start, is_work_day) %>% 
+    group_by(station_start, is_holiday) %>% 
     summarize(mean_rentals = mean(no_rentals),
               crossing = mean(crossing),
               windspeed = mean(windspeed))
 
 head(rentals_multi)
 
-# plot crossings, colored by is_work_day
+# plot crossings, colored by is_holiday
 ggplot(rentals_multi, 
-       aes(x = crossing, y = mean_rentals, color = factor(is_work_day))) +
+       aes(x = crossing, y = mean_rentals, color = factor(is_holiday))) +
   geom_smooth(method = 'lm', size = 2) +
   geom_point(size = 4, alpha = 0.60) +
   theme_minimal()
 
-# plot windspeed, colored by is_work_day
+# plot windspeed, colored by is_holiday
 ggplot(rentals_multi, 
-       aes(x = windspeed, y = mean_rentals, color = factor(is_work_day))) +
+       aes(x = windspeed, y = mean_rentals, color = factor(is_holiday))) +
   geom_smooth(method = 'lm', size = 2) +
   geom_point(size = 4, alpha = 0.60) +
   theme_minimal()
 
-model = lm(mean_rentals ~ crossing + windspeed + factor(is_work_day), 
+model = lm(mean_rentals ~ crossing + windspeed + factor(is_holiday), 
            data = rentals_multi)
 summary(model)
 ```
 
 The output looks a little funny now. There's a term called 
-`factor(is_work_day)1`, what does that mean? Factors are category variables and 
-their interpretation is relative to a baseline. Our factor `is_work_day` 
+`factor(is_holiday)1`, what does that mean? Factors are category variables and 
+their interpretation is relative to a baseline. Our factor `is_holiday` 
 only has two levels, 0 and 1, and R sets 0 to the baseline by default. So the 
 interpretation of that term is that we can expect about 10 additional rentals 
-when it is a work day (*i.e.* `is_work_day == 0`) and the other variables are
+when it is a holiday (*i.e.* `is_holiday == 0`) and the other variables are
 fixed.
 
 ## The *caret* package
 
-We'll be using the *caret* package (short for *c*lassification *a*nd 
-*re*gression *t*raining) for model development because it integrates
+```{r, include = FALSE}
+rm(data)
+data = read.delim('./data/final_modeling_data.tsv', sep = '\t', header = TRUE)
+data$weekday = factor(data$weekday, labels = 0:6, levels = 0:6)
+data$season_code = factor(data$season_code)
+datais_holiday = factor(data$is_holiday)
+data$weather_code = factor(data$weather_code)
+```
+
+For this section, we'll use the fully cleaned and comined data from the 
+[project-1-data-cleanup]() file, so make sure you've gone through and cleaned
+your data up like that, or download the clean file from []().
+
+```{r, eval = FALSE}
+data = read.delim('final_modeling_data.tsv', sep = '\t', header = TRUE)
+```
+
+We'll be using the *caret* package (short for **c**lassification **a**nd 
+**re**gression **t**raining) for model development because it integrates
 many modeling packages in R into one unified syntax. That means more reusable
 code for us! *caret* contains helper functions that provide a unified 
 framework for data cleaning/splitting, model training, and comparison. I highly
@@ -262,6 +279,27 @@ rerun them we'll get slightly different answers. Setting the seed to the same
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
 
+### Preprocessing
+
+Many methods work best when the predictors are normalized to be on the same 
+scale. This is often done by centering or scaling the data. You center a 
+variable by subtracting the mean of the variable from from each observation. To
+scale your observations you then divide the centered observation by the variable
+standard deviation. Now the variable follows a standard normal distribution with
+mean = 0 and standard deviation = 1.
+
+Centering and scaling
+is straightforward in R, but The *caret* package 
+has lots of convenient functions for 
+[preprocessing data](http://topepo.github.io/caret/preprocess.html).
+
+#### Converting factors to dummy variables
+
+We run into some trouble if we try to just center and scale the data because its
+got factor variables and you can't really subtract anything from a category.
+
+x = dummyVars(~ cust_type + weekday + season_code + is_holiday + weather_code, data = data)
+
 ### Train and test data
 
 Before any analysis in this class we'll need to divide our data into train and 
@@ -280,13 +318,13 @@ future on brand new data.
 Here's how to split the data with *caret*:
 ```{r}
 # select the training observations
-in_train = createDataPartition(y = rentals_multi$mean_rentals,
+in_train = createDataPartition(y = data$rentals,
                                    p = 0.75, # 75% in train, 25% in test
                                    list = FALSE)
 head(in_train) # row indices of observations in the training set
 
-train = rentals_multi[in_train, ]
-test = rentals_multi[-in_train, ]
+train = data[in_train, ]
+test = data[-in_train, ]
 
 dim(train)
 dim(test)
@@ -304,7 +342,7 @@ regression we can use it in place of the `lm()` function. Here's our last
 regression model using the train function.
 
 ```{r}
-model_fit = train(mean_rentals ~ crossing + windspeed + factor(is_work_day), 
+model_fit = train(rentals ~ crossing + windspeed + factor(is_holiday), 
                   data = train, 
                   method = 'lm',
                   metric = 'RMSE') 
@@ -316,8 +354,8 @@ out_of_sample_predictions = predict(model_fit, newdata = test)
 
 # compare predictions against the observed values
 errors = data.frame(predicted = out_of_sample_predictions,
-                    observed = test$mean_rentals,
-                    error = out_of_sample_predictions - test$mean_rentals)
+                    observed = test$rentals,
+                    error = out_of_sample_predictions - test$rentals)
 
 # eh, not so good
 ggplot(data = errors, aes(x = predicted, y = observed)) + 
@@ -328,12 +366,151 @@ ggplot(data = errors, aes(x = predicted, y = observed)) +
   theme_minimal()
 ```
 
-Our prediction accuracy is not so great for this model. The RMSE is about 15
-which means that on average the predictions are off by about 15 rentals.
+Our prediction accuracy is not so great for this model. The in-sample RMSE is 
+about 27 which means that on average the predictions are off by about 27 
+rentals. Let's fit the giant model we made before:
+```{r}
+full_model = train(rentals ~ ., 
+                  data = train, 
+                  method = 'lm',
+                  metric = 'RMSE') 
+```
 
-## Parameter tuning
+The in-sample RMSE is about 19, so definitely an improvement over the previous 
+model, but this model is really complex and probably not going to be usable by
+Pronto. How can we reduce the complexity of the model, but maintain reasonable
+predictive accuracy?
 
-## Feature Selection
+## Model tuning
+
+### Variable combination
+
+The selection and shrinkage methods were cool, but a simpler method might be to 
+just combine some of the variables. For example the dataset contains a variable
+for *alcohol*, *pub* and *bar*, likewise there's a variable for *food_court*,
+*restaurant*, *food_cart*, and *fast_food*. Maybe we can retain more of the 
+variables by combining some that are pretty similar.
+
+```{r}
+data$food = data$fast_food + data$restaurant + data$food_court + 
+  data$bar.restaurant + data$cafe + data$food_cart 
+
+data$nightlife = data$bar + data$club + data$pub + data$nightclub 
+
+data$seedy_stuff = data$stripclub + data$strip_club + data$alcohol + 
+  data$check_cashing + data$motel + data$hostel
+
+data$tourism = data$theatre + data$arts_centre + data$tourist + 
+  data$school..historic. + data$hotel + data$gallery + data$artwork + 
+  data$sculpture + data$museum + data$tour_guide + data$car_rental + 
+  data$guest_house + data$landmark + data$attraction + data$information
+
+dim(data)
+# now remove those variables from the dataset
+data = 
+  data %>%
+    select(-fast_food, -restaurant, -food_court, -bar.restaurant, -cafe, 
+           -food_cart, -bar, -club, -pub, -nightclub, -stripclub, -strip_club, 
+           -alcohol, -check_cashing, -motel, -hostel, -theatre, -arts_centre, 
+           -tourist, -school..historic., -hotel, -gallery, -artwork, -sculpture, 
+           -museum, -tour_guide, -car_rental, -guest_house, -landmark, 
+           -attraction, -information)
+
+# Reduced the dataset by 29 variables!
+dim(data)
+```
+
+Feel free to make your own categories, there are just a few to get you started.
+We'll learn how to make categories computationally when we cover clustering.
+
+We've change the dataframe, don't forget to redefine the train and test sets!
+```{r}
+train = data[in_train, ]
+test = data[-in_train, ]
+
+dim(train)
+dim(test)
+
+# How does our new full-model compare?
+full_model = train(rentals ~ ., 
+                  data = train, 
+                  method = 'lm',
+                  metric = 'RMSE') 
+```
+
+The new in-sample RMSE is about 20, not much different than the more complex 
+full-model.
+
+### Shrinkage
+
+Ridge regression 
+```{r}
+ridge_grid = data.frame(.lambda = seq(0, .1, length = 15))
+
+# ridge regression
+ridge_model1 = train(rentals ~ ., 
+                  data = train, 
+                  method = 'ridge')
+
+# ridge regression with variable selection
+ridge_model2 = train(rentals ~ ., 
+                  data = train, 
+                  method = 'foba')
+
+print(ridge_model)
+plot(ridge_model)
+
+ridge_model$finalModel
+
+ridge_predictions = predict(ridge_model, newdata = test)
+
+# compare predictions against the observed values
+errors = data.frame(predicted = ridge_predictions,
+                    observed = test$rentals,
+                    error = ridge_predictions - test$rentals)
+
+# eh, not so good
+ggplot(data = errors, aes(x = predicted, y = observed)) + 
+  geom_abline(aes(intercept = 0, slope = 1), 
+              size = 3, alpha = 0.70, color = 'red') +
+  geom_point(size = 3, alpha = 0.80) +
+  ggtitle('out-of-sample errors') +
+  theme_minimal()
+
+```
+
+The ridge regression output 
+
+### Subset selection
+
+We haven't talked much about computational limitations yet, but it's a good 
+time to start. Selection methods can be *extremely* slow. Why? Because we have 
+$2^p = 2^117$ possible combinations of variables can be made. So, I recommend
+doing some combining before trying out these methods.
+
+```{r, eval = FALSE}
+forward_model = train(rentals ~ ., 
+                  data = train,  
+                  metric = 'leapForward',
+                  nvmax = 10) 
+
+backward_model = train(rentals ~ ., 
+                  data = train,  
+                  metric = 'leapBackward',
+                  nvmax = 10) 
+
+both_model = train(rentals ~ ., 
+                  data = train,  
+                  metric = 'leapSeq',
+                  nvmax = 10) 
+```
+
+```{r, eval = FALSE}
+# warning, this function could take a long while! might want to run over night.
+step_model = train(rentals ~ ., 
+                  data = train, 
+                  method = 'lmStepAIC') 
+```
 
 ## Which model is the best?
 
@@ -342,166 +519,7 @@ that criteria alone will cause you to favor larger models.
 
 ## Project tips
 
-We saw how to merge the datasets together into one, but it often makes sense to 
-do some aggregation before merging. For example, since we know *usage* needs to 
-be aggregated and summarized to remove the date variable, it makes 
-sense to merge *usage* with the weather data and summarized before merging on 
-the station data.  For example:
-```{r}
-# we made this data frame in the merging section above
-weather_rentals = merge(custs_per_day, weather, 
-                        by.x = 'time_start', by.y = 'date')
+Check out this list of different model selection methods and try a couple out.
 
-# group_by all the factors and summarize the continuous variables to generate
-# a final data frame that can be merged by station.
-model_data = 
-  weather_rentals %>% 
-    group_by(
-      station_start, 
-      cust_type,
-      weekday, 
-      season_code, 
-      is_holiday, 
-      is_work_day, 
-      weather_code) %>% 
-    summarize(
-      rentals = mean(no_rentals),
-      duration = mean(duration_mins),
-      temp = mean(temp),
-      subjective_temp = mean(subjective_temp),
-      humidity = mean(humidity),
-      windspeed = mean(windspeed))
-
-head(model_data)
-   
-# now merge on stations
-final_data = merge(model_data, stations, 
-  by.x = 'station_start',
-  by.y = 'station')
-  
-data = final_data
-rm(final_data)
-
-# remove variables from the data that won't be used for modeling, e.g. lat/long
-data_to_model = 
-  data %>%
-    select(-station_start, -id, -terminal_name, -lat, -long)
-
-dim(data_to_model)
-head(data_to_model)
-
-model = lm(rentals ~ ., data = data_to_model)
-summary(model)
-
-# hmm, we have some weirdness in there, some stations features don't exist 
-# around any of our stations, e.g. 'turning_loop'
-table(data_to_model$turning_loop)
-
-# lets remove those using the handly 'colSums' and 'which' functions
-colSums(data_to_model[ , 15:143])
-
-# we want to know 'which' columns have a sum of 0
-columns_to_remove = names(which(colSums(data_to_model[ , 15:143]) == 0))
-
-# now combine that with filter to remove those from our data
-data_to_model = data_to_model[ , !(names(data_to_model) %in% columns_to_remove)]
-
-# try the model again
-model = lm(rentals ~ ., data = data_to_model)  
-summary(model)
-
-# definintely better, but we still have some weird NAs, lets troubleshoot those
-table(data_to_model$vending_machine)
-table(data_to_model$storage)
-table(data_to_model$dojo)
-table(data_to_model$tax_service)
-table(data_to_model$telephone)
-
-# all the landmarks have at most 1 in the area, so there are not enough 
-# observations for least square to fit the model.
-# these variables won't be helpful in prediction, so lets remove them.
-
-data_to_model = 
-  data_to_model %>% 
-  select(
-    -vending_machine, 
-    -storage,
-    -dojo,
-    -tax_service,
-    -telephone)
-    
-# try the model again
-model = lm(rentals ~ ., data = data_to_model)  
-summary(model)
-
-# one last modification. our categorical variables are being treated like 
-# they're continuous. lets create some factors
-data_to_model$weekday = factor(data_to_model$weekday, 
-                               labels = 0:6, 
-                               levels = 0:6)
-data_to_model$season_code = factor(data_to_model$season_code)
-data_to_model$is_holiday = factor(data_to_model$is_holiday)
-data_to_model$is_work_day = factor(data_to_model$is_work_day)
-data_to_model$weather_code = factor(data_to_model$weather_code)
-
-# try the model again
-model = lm(rentals ~ ., data = data_to_model)  
-summary(model)
-
-# now 'is_work_day1' is NA, what gives?! remember the assumptions of linear 
-# regression. our covariates must be independent - that is, not correlated. in
-# this case if you know the values of weekday, you know the value of 
-# is_work_day so that assumption doesn't hold. get rid of it!
-data_to_model$is_work_day = NULL
-
-# try the model again
-model = lm(rentals ~ ., data = data_to_model)  
-summary(model)
-
-# ok, we've successfully hit a model but boy does it have a lot of predictors
-# lets start evaluating the predictive accuracy
-
-# select the training observations
-in_train = createDataPartition(y = data_to_model$rentals,
-                                   p = 0.75,
-                                   list = FALSE)
-
-train = data_to_model[in_train, ]
-test = data_to_model[-in_train, ]
-
-# when we train with the lm function, we get the same results as using lm()
-model_fit = train(rentals ~ ., 
-                  data = train, 
-                  method = 'lm',
-                  metric = 'RMSE') 
-
-# view the relative importance of the predictors
-plot(varImp(model_fit), top = 20)
-
-rentals_predicted = predict(model_fit, newdata = test)
-
-prediction = data.frame(rentals_predicted,
-                        rentals_observed = test$rentals,
-                        error = rentals_predicted - test$rentals)
-summary(prediction$error)
-
-ggplot(data = prediction, aes(x = rentals_predicted, y = rentals_observed)) + 
-  geom_point(size = 3, alpha = 0.80) +
-  geom_abline(aes(intercept = 0, slope = 1), 
-              size = 3, alpha = 0.70, color = 'red') +
-  geom_smooth() +
-  theme_minimal()
-
-ggplot(data = filter(prediction, rentals_predicted > 0), aes(x = rentals_predicted, y = rentals_observed)) + 
-  geom_point(size = 3, alpha = 0.80) +
-  geom_abline(aes(intercept = 0, slope = 1), 
-              size = 3, alpha = 0.70, color = 'red') +
-  geom_smooth() +
-  theme_minimal()
-
-ggplot(data = filter(prediction, rentals_predicted > 0), aes(x = rentals_predicted, y = error)) + 
-  geom_point(size = 3, alpha = 0.80) +
-  geom_smooth() +
-  theme_minimal()
-```
-
+  * How do they work?
+  * Which works best?
