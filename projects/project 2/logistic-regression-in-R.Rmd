@@ -1,0 +1,67 @@
+---
+title: "Logistic regression in R"
+author: "Erin Shellman"
+date: "May 03, 2015"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+require(dplyr)
+require(ggplot2)
+require(GGally)
+require(scales)
+require(lubridate)
+require(caret)
+data = read.delim(
+```
+
+```{r}
+library(GGally)
+ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')])
+ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'season_desc')],
+        lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
+        diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
+        upper = list(continuous = 'cor', combo = 'facetdensity'),
+        axisLabels = 'show', color = 'season_desc')
+```
+
+## Logistic regression
+
+```{r}
+# select the training observations
+in_train = createDataPartition(y = data$rentals,
+                                   p = 0.75, # 75% in train, 25% in test
+                                   list = FALSE)
+head(in_train) # row indices of observations in the training set
+
+train = data[in_train, ]
+test = data[-in_train, ]
+```
+
+[models](http://topepo.github.io/caret/Logistic_Regression.html)
+
+```{r}
+logistic_model = train(rentals ~ ., 
+                        data = na.omit(train),  
+                        method = 'glm',
+                        family    = binomial ,
+                        preProcess = c('center', 'scale'),
+                        trControl = trainControl(method = 'cv', number = 5)) 
+final_model = logistic_model$finalModel
+
+predictions = predict(final_model, newdata = test)
+
+confusionMatrix(predictions, test$bot)
+```
+
+### Boosting 
+
+### Bagging
