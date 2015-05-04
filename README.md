@@ -57,9 +57,9 @@ Week | Date | Topic | Dataset
 5 | May 4 | Trees | Twitter user data 
 6 | May 11 | Association rules | The Million Song Dataset
 7 | May 18 | Clustering | The Million Song Dataset 
-8 | June 1 | Time series I | TBD 
-9 | June 8 | Time series II | TBD
-10 | June 15 | Sharing your work | None! 
+8 | June 1 | Clustering | The Million Song Dataset 
+9 | June 8 | Sharing your work | None!
+10 | June 15 | Guest panel | None! 
 
 ## Software Installation
 
