@@ -3,13 +3,13 @@ title: "Logistic regression in R"
 author: "Erin Shellman"
 date: "May 04, 2015"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
@@ -58,12 +58,10 @@ data$default_profile = factor(data$default_profile)
 data$default_profile_image = factor(data$default_profile_image)
 data$geo_enabled = factor(data$geo_enabled)
 data$profile_background_tile = factor(data$profile_background_tile)
-data$protected = factor(data$protected)
 data$verified = factor(data$verified)
 ```
 
 Now, we can explore the data a bit.
-
 ```{r, warning = FALSE, message = FALSE}
 summary(data)
 
@@ -75,6 +73,36 @@ ggpairs(data[ , c('followers_count', 'friends_count', 'account_age',
         diag = list(continuous = 'density', params = list(alpha = 0.70)), 
         upper = list(continuous = 'cor'),
         axisLabels = 'show', color = 'bot')
+
+ggplot(data, aes(x = followers_count, fill = factor(bot))) +
+  geom_histogram(alpha = 0.60)
+
+# whoa, some people have a lot of followers, but most don't. we need to lob off
+# the long tail so we can see the distribution better
+ggplot(filter(data, followers_count < 100), 
+       aes(x = followers_count, fill = factor(bot))) +
+  geom_histogram(alpha = 0.60)
+
+# how about the number of people they follow?
+ggplot(data, aes(x = friends_count, fill = factor(bot))) +
+  geom_histogram(alpha = 0.60)
+
+# it's a little hard to see
+ggplot(filter(data, friends_count < 100), 
+       aes(x = friends_count, fill = factor(bot))) +
+  geom_histogram(alpha = 0.60)
+
+# that's better
+ggplot(filter(data, friends_count < 2500), 
+       aes(x = friends_count, fill = factor(bot))) +
+  geom_density(alpha = 0.60)
+
+# what about account age?
+ggplot(data, aes(x = account_age, fill = factor(bot))) +
+  geom_density(alpha = 0.60)
+
+# geo enabled?
+xtabs(~bot + geo_enabled, data = data)
 ```
 
 ## Logistic regression
@@ -82,23 +110,25 @@ ggpairs(data[ , c('followers_count', 'friends_count', 'account_age',
 Lucky for us, we can use the handy `train()` function for fitting logistic 
 regressions.
 
-```{r, warning = FALSE}
+```{r, warning = FALSE, message = FALSE}
 set.seed(243)
 data = na.omit(data)
 
 # select the training observations
 in_train = createDataPartition(y = data$bot,
-                                   p = 0.75, # 75% in train, 25% in test
-                                   list = FALSE)
+                               p = 0.75, # 75% in train, 25% in test
+                               list = FALSE)
 
 train = data[in_train, ]
 test = data[-in_train, ]
 
+# drop the ids
 train$id = NULL
 test$id = NULL
 ```
 
-[models](http://topepo.github.io/caret/Logistic_Regression.html)
+Check out [this page](http://topepo.github.io/caret/Logistic_Regression.html)
+for more types of logistic regression to try out.
 
 ```{r, warning = FALSE}
 logistic_model = train(bot ~ ., 
@@ -116,10 +146,10 @@ confusionMatrix(logistic_predictions, test$bot)
 
 # stepwise logisitic regression
 step_model = train(bot ~ ., 
-                       data = na.omit(train),  
-                       method = 'glmStepAIC',
-                       family = binomial,
-                       preProcess = c('center', 'scale'))
+                   data = na.omit(train),  
+                   method = 'glmStepAIC',
+                   family = binomial,
+                   preProcess = c('center', 'scale'))
 summary(step_model)
 plot(varImp(step_model))
 
