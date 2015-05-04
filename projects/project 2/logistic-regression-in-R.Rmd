@@ -1,7 +1,7 @@
 ---
 title: "Logistic regression in R"
 author: "Erin Shellman"
-date: "May 03, 2015"
+date: "May 04, 2015"
 output:
   html_document:
     theme: readable
@@ -13,6 +13,7 @@ output:
 ---
 
 ```{r setup, include = FALSE}
+# my set-up
 knitr::opts_chunk$set(cache = TRUE)
 require(dplyr)
 require(ggplot2)
@@ -20,48 +21,121 @@ require(GGally)
 require(scales)
 require(lubridate)
 require(caret)
-data = read.delim(
+setwd('~/projects/BI-TECH-CP303/projects/project 2')
+data = read.delim('./data/bot_or_not.tsv',
+                   sep = '\t',
+                   header = TRUE)
 ```
 
-```{r}
+For the second project we'll explore user data from Twitter. The data set has a
+variable called `bot` that denotes whether the user is a bot, and then some 
+features about the user account.
+
+```{r, eval = FALSE}
+library(dplyr)
+library(ggplot2)
+library(lubridate)
 library(GGally)
-ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')])
-ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'season_desc')],
-        lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
-        diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
-        upper = list(continuous = 'cor', combo = 'facetdensity'),
-        axisLabels = 'show', color = 'season_desc')
+library(scales)
+library(caret)
+
+data = read.delim('bot_or_not.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+## Exploratory data analysis
+
+We've got a brand new dataset here, so let's familiarize ourselves by
+conducting an exploratory data analysis. First, let's make sure the variables 
+are of the right types, *i.e.* continuous variables are continuous and dummy 
+variables are factors.
+
+```{r}
+# tell R which variables are categorical (factors)
+data$bot = factor(data$bot)
+data$default_profile = factor(data$default_profile)
+data$default_profile_image = factor(data$default_profile_image)
+data$geo_enabled = factor(data$geo_enabled)
+data$profile_background_tile = factor(data$profile_background_tile)
+data$protected = factor(data$protected)
+data$verified = factor(data$verified)
+```
+
+Now, we can explore the data a bit.
+
+```{r, warning = FALSE, message = FALSE}
+summary(data)
+
+# inspect the trends
+ggpairs(data[ , c('followers_count', 'friends_count', 'account_age', 
+                  'days_since_last_tweet', 'listed_count', 
+                  'status_favorite_count', 'bot')],
+        lower = list(continuous = 'points', params = list(alpha = 0.70)),
+        diag = list(continuous = 'density', params = list(alpha = 0.70)), 
+        upper = list(continuous = 'cor'),
+        axisLabels = 'show', color = 'bot')
 ```
 
 ## Logistic regression
 
-```{r}
+Lucky for us, we can use the handy `train()` function for fitting logistic 
+regressions.
+
+```{r, warning = FALSE}
+set.seed(243)
+data = na.omit(data)
+
 # select the training observations
-in_train = createDataPartition(y = data$rentals,
+in_train = createDataPartition(y = data$bot,
                                    p = 0.75, # 75% in train, 25% in test
                                    list = FALSE)
-head(in_train) # row indices of observations in the training set
 
 train = data[in_train, ]
 test = data[-in_train, ]
+
+train$id = NULL
+test$id = NULL
 ```
 
 [models](http://topepo.github.io/caret/Logistic_Regression.html)
 
-```{r}
-logistic_model = train(rentals ~ ., 
-                        data = na.omit(train),  
-                        method = 'glm',
-                        family    = binomial ,
-                        preProcess = c('center', 'scale'),
-                        trControl = trainControl(method = 'cv', number = 5)) 
-final_model = logistic_model$finalModel
+```{r, warning = FALSE}
+logistic_model = train(bot ~ ., 
+                       data = na.omit(train),  
+                       method = 'glm',
+                       family = binomial,
+                       preProcess = c('center', 'scale'))
 
-predictions = predict(final_model, newdata = test)
+summary(logistic_model)
+plot(varImp(logistic_model))
 
-confusionMatrix(predictions, test$bot)
+# test predictions
+logistic_predictions = predict(logistic_model, newdata = test)
+confusionMatrix(logistic_predictions, test$bot)
+
+# stepwise logisitic regression
+step_model = train(bot ~ ., 
+                       data = na.omit(train),  
+                       method = 'glmStepAIC',
+                       family = binomial,
+                       preProcess = c('center', 'scale'))
+summary(step_model)
+plot(varImp(step_model))
+
+step_predictions = predict(step_model, newdata = test)
+confusionMatrix(step_predictions, test$bot)
+
+# compare
+results = resamples(list(logistic_model = logistic_model, 
+                         step_model = step_model))
+
+# compare accuracy and kappa
+summary(results)
+
+# plot results
+dotplot(results)
 ```
 
-### Boosting 
-
-### Bagging
+Now that we have a discrete binary outcome we'll use performance metrics called
+accuracy and kappa instead of $R^2$ and RMSE. 
