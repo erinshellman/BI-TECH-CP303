@@ -53,7 +53,7 @@ Week | Date | Topic | Dataset
 1 | April 6 | Introduction to Data mining and programming with R | Capital Bikeshare: [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv), [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv), [*daily_weather.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv)
 2 | April 13 | Linear regression | Capital BikeShare 
 3 | April 20 | Linear regression extensions | Capital BikeShare 
-4 | April 27 | Logistic regression | Twitter user data 
+4 | April 27 | Logistic regression | Twitter user data: [*bot_or_not.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+2/bot_or_not.tsv)
 5 | May 4 | Trees | Twitter user data 
 6 | May 11 | Association rules | The Million Song Dataset
 7 | May 18 | Clustering | The Million Song Dataset 
