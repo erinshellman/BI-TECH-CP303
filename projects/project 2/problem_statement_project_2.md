@@ -6,7 +6,7 @@ Twitter is a social media platform that allows users to post 140 character messa
 
 ### Data 
 
-``{r}
+```{r}
 str(users)
 'data.frame':	5983 obs. of  14 variables:
  $ id                     : num  3.07e+09 9.82e+06 9.37e+08 3.02e+09 2.18e+09 ...
@@ -23,7 +23,8 @@ str(users)
  $ profile_background_tile: Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 2 ...
  $ status_favorite_count  : int  0 2 0 0 0 0 0 0 0 0 ...
  $ verified               : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
-``
+```
+
 id: user id 
 bot: an indicator variable denoting if a user is a bot
 followers_count: how many followers do they have?
