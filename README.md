@@ -29,7 +29,7 @@ When you turn in your project reports, you will receive the reports of three of 
 |-----------|----------|
 | [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | May 4 | 
 | Project 1 Critiques | May 11 | 
-| Project 2 | May 18   | 
+| [Project 2](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%202/problem_statement_project_2.md) | May 18   | 
 | Project 2 Critiques | June 1 | 
 | Project 3 | June 8   | 
 | Project 3 Critiques | June 15 | 
