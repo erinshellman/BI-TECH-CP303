@@ -25,20 +25,20 @@ str(users)
  $ verified               : Factor w/ 2 levels "0","1": 1 1 1 1 1 1 1 1 1 1 ...
 ```
 
-id: user id 
-bot: an indicator variable denoting if a user is a bot
-followers_count: how many followers do they have?
-friends_count: how many people do they follow?
-default_profile: is the profile the default?
-default_profile_image: is the profile photo the default?
-favourites_count: how many things has the user 'faved'
-geo_enabled: have they enabled geolocation services?         
-account_age: the age in years of the account
-days_since_last_tweet: the number of days since the user lasted tweeted
-listed_count: how many people have listed them?
-profile_background_tile:
-status_favorite_count: how many people faved their last tweet?
-verified: is the user verified?
+**id:** user id 
+**bot:** an indicator variable denoting if a user is a bot
+**followers_count:** how many followers do they have?
+**friends_count:** how many people do they follow?
+**default_profile:** is the profile the default?
+**default_profile_image:** is the profile photo the default?
+**favourites_count:** how many things has the user 'faved'
+**geo_enabled:** have they enabled geolocation services?         
+**account_age:** the age in years of the account
+**days_since_last_tweet:** the number of days since the user lasted tweeted
+**listed_count:** how many people have listed them?
+**profile_background_tile:** is the background image the default?
+**status_favorite_count:** how many people faved their last tweet?
+**verified:** is the user verified?
 
 Read more about the data [here](https://dev.twitter.com/rest/reference/get/users/lookup).
 
