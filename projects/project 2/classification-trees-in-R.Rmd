@@ -3,13 +3,13 @@ title: "Classification Trees in R"
 author: "Erin Shellman"
 date: "May 11, 2015"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
@@ -37,7 +37,7 @@ data = read.delim('bot_or_not.tsv',
                    header = TRUE)
 ```
 
-Divide the data into test and train.
+As usual, divide the data into test and train.
 ```{r, warning = FALSE, message = FALSE}
 # tell R which variables are categorical (factors)
 data$bot = factor(data$bot)
@@ -63,10 +63,11 @@ train$id = NULL
 test$id = NULL
 ```
 
+# Grow one tree
+
 *caret* has [lots of](http://topepo.github.io/caret/Tree_Based_Model.html) 
 different tree models, so check 'em out. We can make a simple tree model using
 the `rpart` method.
-
 ```{r, warning = FALSE, message = FALSE}
 tree_model = train(factor(bot) ~., 
                    method = 'rpart',
@@ -85,6 +86,7 @@ fancyRpartPlot(tree_model$finalModel)
 
 # test the predictions
 tree_predictions = predict(tree_model, newdata = test)
+confusionMatrix(tree_predictions, test$bot)
 ```
 
 By default, the train function will try three values of the complexity 
@@ -99,7 +101,6 @@ print(tree_model$finalModel)
 # plot accuracy by the complexity parameter
 plot(tree_model)
 
-# we can do better!
 library(rattle)
 fancyRpartPlot(tree_model$finalModel)
 
@@ -114,33 +115,24 @@ You might have to install some extra packages before this one will run. The key
 idea in bagging is that we resample the input data and recompute the 
 predictions. Then, use the average or majority vote to determine the class.
 
-```{r}
+```{r, warning = FALSE}
 bagged_model = train(bot ~.,
-                    method = 'AdaBag',
-                    data = train,
-                    trControl = trainControl(method = 'cv', number = 5))
+                    method = 'treebag',
+                    data = train)
 print(bagged_model)
+print(bagged_model$finalModel)
 
 bagged_predictions = predict(bagged_model, test)
-
-confusionMatrix(bagged_model)
+confusionMatrix(bagged_predictions, test$bot)
 ```
+
+In this case, we do get some accuracy gains from bagging.
 
 # Boosting 
 
 The key idea of boosting is that we amplify the signal of weak predictors by 
-up-weighting misclassified observations at each 
-
-Approach:
-	1. start with a set of classifiers (h_1, ..., h_k)
-	2. create a classifier that combines the classification functions:
-		iterative, select one h at each step
-		calculate weights based on errors
-		upweight missed classifications and select next h
-
-Adaboost
-
-```{r}
+up-weighting misclassified observations at each split point.
+```{r, warning = FALSE}
 boost_model = train(bot ~.,
                     method = 'gbm',
                     data = train,
@@ -156,14 +148,13 @@ confusionMatrix(boost_predictions, test$bot)
 
 # Random Forest
 
-A resampling method where we resample both obervations, and variables. Grow 
-multiple trees and vote. One of the most accurate classifier, but can be slow.
-
+Random forest is a bagging method where we resample both obervations, and 
+variables, grow multiple trees and aggregate votes. It's one of the most 
+accurate classifiers, but can be slow. Might want to run this one at home...
 ```{r, eval = FALSE}
 rf_model = train(bot ~., 
                  data = train, 
                  method = 'rf',
-                 preProcess = c('center', 'scale'),
                  prox = TRUE,
                  verbose = TRUE)
 
@@ -186,7 +177,6 @@ As always, we can compare the models with the `resamples` function.
 # compare
 results = resamples(list(tree_model = tree_model, 
                          bagged_model = bagged_model,
-                         #rf_model = step_model,
                          boost_model = boost_model))
 
 # compare accuracy and kappa
