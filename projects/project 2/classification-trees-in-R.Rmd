@@ -63,8 +63,9 @@ train$id = NULL
 test$id = NULL
 ```
 
-Check out [all these](http://topepo.github.io/caret/Tree_Based_Model.html) 
-different tree models. 
+*caret* has [lots of](http://topepo.github.io/caret/Tree_Based_Model.html) 
+different tree models, so check 'em out. We can make a simple tree model using
+the `rpart` method.
 
 ```{r, warning = FALSE, message = FALSE}
 tree_model = train(factor(bot) ~., 
@@ -88,20 +89,15 @@ tree_predictions = predict(tree_model, newdata = test)
 
 By default, the train function will try three values of the complexity 
 parameter, but we can tell it to try more using the `tuneLength` argument.
-
 ```{r, warning = FALSE, message = FALSE}
 tree_model = train(factor(bot) ~., 
                    method = 'rpart',
                    data = train, 
-                   tuneLength = 30)
+                   tuneLength = 10)
 print(tree_model)
 print(tree_model$finalModel)
 # plot accuracy by the complexity parameter
 plot(tree_model)
-
-# plot the tree!
-plot(tree_model$finalModel)
-text(tree_model$finalModel, use.n = TRUE, all = TRUE, cex = 0.60)
 
 # we can do better!
 library(rattle)
@@ -114,13 +110,9 @@ confusionMatrix(tree_predictions, test$bot)
 
 # Bootstrap aggregating (bagging)
 
-Bagging methods You might have to install some extra packages before this one 
-will run.
-Basic idea:
-  1. resample cases and recalculate predictions	
-	2. average or majority vote
-	Most useful for non-linear functions
-
+You might have to install some extra packages before this one will run. The key
+idea in bagging is that we resample the input data and recompute the 
+predictions. Then, use the average or majority vote to determine the class.
 
 ```{r}
 bagged_model = train(bot ~.,
@@ -132,32 +124,6 @@ print(bagged_model)
 bagged_predictions = predict(bagged_model, test)
 
 confusionMatrix(bagged_model)
-```
-
-# Random Forest
-
-A resampling method where we resample both obervations, and variables. Grow 
-multiple trees and vote. One of the most accurate classifier, but can be slow.
-
-```{r, eval = FALSE}
-rf_model = train(bot ~., 
-                 data = train, 
-                 method = 'rf',
-                 preProcess = c('center', 'scale'),
-                 prox = TRUE,
-                 verbose = TRUE)
-
-print(rf_model)
-summary(rf_model)
-plot(rf_model)
-plot(rf_model$finalModel)
-
-# pull a tree out of the forest
-getTree(rf_model$finalModel, k = 5)
-
-# predict
-rf_predictions = predict(rf_model, test)
-confusionMatrix(rf_predictions, test$bot)
 ```
 
 # Boosting 
@@ -186,6 +152,32 @@ summary(boost_model$finalModel)
 # predict
 boost_predictions = predict(boost_model, test)
 confusionMatrix(boost_predictions, test$bot)
+```
+
+# Random Forest
+
+A resampling method where we resample both obervations, and variables. Grow 
+multiple trees and vote. One of the most accurate classifier, but can be slow.
+
+```{r, eval = FALSE}
+rf_model = train(bot ~., 
+                 data = train, 
+                 method = 'rf',
+                 preProcess = c('center', 'scale'),
+                 prox = TRUE,
+                 verbose = TRUE)
+
+print(rf_model)
+summary(rf_model)
+plot(rf_model)
+plot(rf_model$finalModel)
+
+# pull a tree out of the forest
+getTree(rf_model$finalModel, k = 5)
+
+# predict
+rf_predictions = predict(rf_model, test)
+confusionMatrix(rf_predictions, test$bot)
 ```
 
 As always, we can compare the models with the `resamples` function.
