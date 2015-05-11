@@ -1,0 +1,207 @@
+---
+title: "Classification Trees in R"
+author: "Erin Shellman"
+date: "May 11, 2015"
+output:
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+require(dplyr)
+require(ggplot2)
+require(GGally)
+require(scales)
+require(caret)
+setwd('~/projects/BI-TECH-CP303/projects/project 2')
+data = read.delim('./data/bot_or_not.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+We'll be working with the same Twitter dataset again this week:
+```{r, eval = FALSE}
+library(dplyr)
+library(ggplot2)
+library(scales)
+library(caret)
+
+data = read.delim('bot_or_not.tsv',
+                   sep = '\t',
+                   header = TRUE)
+```
+
+Divide the data into test and train.
+```{r, warning = FALSE, message = FALSE}
+# tell R which variables are categorical (factors)
+data$bot = factor(data$bot)
+data$default_profile = factor(data$default_profile)
+data$default_profile_image = factor(data$default_profile_image)
+data$geo_enabled = factor(data$geo_enabled)
+data$profile_background_tile = factor(data$profile_background_tile)
+data$verified = factor(data$verified)
+
+set.seed(243)
+data = na.omit(data)
+
+# select the training observations
+in_train = createDataPartition(y = data$bot,
+                               p = 0.75, # 75% in train, 25% in test
+                               list = FALSE)
+
+train = data[in_train, ]
+test = data[-in_train, ]
+
+# drop the ids
+train$id = NULL
+test$id = NULL
+```
+
+Check out [all these](http://topepo.github.io/caret/Tree_Based_Model.html) 
+different tree models. 
+
+```{r, warning = FALSE, message = FALSE}
+tree_model = train(factor(bot) ~., 
+                   method = 'rpart',
+                   data = train)
+print(tree_model)
+print(tree_model$finalModel)
+plot(varImp(tree_model))
+
+# plot the tree!
+plot(tree_model$finalModel)
+text(tree_model$finalModel, use.n = TRUE, all = TRUE, cex = 0.60)
+
+# we can do better!
+library(rattle)
+fancyRpartPlot(tree_model$finalModel)
+
+# test the predictions
+tree_predictions = predict(tree_model, newdata = test)
+```
+
+By default, the train function will try three values of the complexity 
+parameter, but we can tell it to try more using the `tuneLength` argument.
+
+```{r, warning = FALSE, message = FALSE}
+tree_model = train(factor(bot) ~., 
+                   method = 'rpart',
+                   data = train, 
+                   tuneLength = 30)
+print(tree_model)
+print(tree_model$finalModel)
+# plot accuracy by the complexity parameter
+plot(tree_model)
+
+# plot the tree!
+plot(tree_model$finalModel)
+text(tree_model$finalModel, use.n = TRUE, all = TRUE, cex = 0.60)
+
+# we can do better!
+library(rattle)
+fancyRpartPlot(tree_model$finalModel)
+
+# test the predictions
+tree_predictions = predict(tree_model, newdata = test)
+confusionMatrix(tree_predictions, test$bot)
+```
+
+# Bootstrap aggregating (bagging)
+
+Bagging methods You might have to install some extra packages before this one 
+will run.
+Basic idea:
+  1. resample cases and recalculate predictions	
+	2. average or majority vote
+	Most useful for non-linear functions
+
+
+```{r}
+bagged_model = train(bot ~.,
+                    method = 'AdaBag',
+                    data = train,
+                    trControl = trainControl(method = 'cv', number = 5))
+print(bagged_model)
+
+bagged_predictions = predict(bagged_model, test)
+
+confusionMatrix(bagged_model)
+```
+
+# Random Forest
+
+A resampling method where we resample both obervations, and variables. Grow 
+multiple trees and vote. One of the most accurate classifier, but can be slow.
+
+```{r, eval = FALSE}
+rf_model = train(bot ~., 
+                 data = train, 
+                 method = 'rf',
+                 preProcess = c('center', 'scale'),
+                 prox = TRUE,
+                 verbose = TRUE)
+
+print(rf_model)
+summary(rf_model)
+plot(rf_model)
+plot(rf_model$finalModel)
+
+# pull a tree out of the forest
+getTree(rf_model$finalModel, k = 5)
+
+# predict
+rf_predictions = predict(rf_model, test)
+confusionMatrix(rf_predictions, test$bot)
+```
+
+# Boosting 
+
+The key idea of boosting is that we amplify the signal of weak predictors by 
+up-weighting misclassified observations at each 
+
+Approach:
+	1. start with a set of classifiers (h_1, ..., h_k)
+	2. create a classifier that combines the classification functions:
+		iterative, select one h at each step
+		calculate weights based on errors
+		upweight missed classifications and select next h
+
+Adaboost
+
+```{r}
+boost_model = train(bot ~.,
+                    method = 'gbm',
+                    data = train,
+                    verbose = FALSE)
+print(boost_model)
+plot(boost_model)
+summary(boost_model$finalModel)
+
+# predict
+boost_predictions = predict(boost_model, test)
+confusionMatrix(boost_predictions, test$bot)
+```
+
+As always, we can compare the models with the `resamples` function.
+
+```{r}
+# compare
+results = resamples(list(tree_model = tree_model, 
+                         bagged_model = bagged_model,
+                         #rf_model = step_model,
+                         boost_model = boost_model))
+
+# compare accuracy and kappa
+summary(results)
+
+# plot results
+dotplot(results)
+```
+
+How do the tree models compare with logistic regression?

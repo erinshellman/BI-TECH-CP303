@@ -9,6 +9,30 @@ Twitter is a social media platform that allows users to post 140 character messa
 ``{r}
 str(users)
 ``
+created_at: date of account creation
+default_profile: is the profile the default?
+default_profile_image: is the profile photo the default?
+description: user profile 
+favourites_count: how many things has the user 'faved'
+followers_count: how many followers do they have?
+friends_count: how many people do they follow?
+geo_enabled: have they enabled geolocation services?         
+id: user id 
+lang: specified language 
+listed_count: how many people have listed them?
+location: location
+name: name
+profile_background_color: 
+profile_background_tile:
+protected: is the account locked?
+screen_name:
+status_coordinates:
+status_created_at:
+status_favorite_count:
+status_favorited:
+status_geo_coordinates:
+status_hashtags:
+status_lang:
 
 Read more about the data [here](https://dev.twitter.com/rest/public).
 
