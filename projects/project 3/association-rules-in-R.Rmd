@@ -1,0 +1,79 @@
+---
+title: "Association Rule Mining in R"
+author: "Erin Shellman"
+date: "May 16, 2015"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include = FALSE}
+# my set-up
+knitr::opts_chunk$set(cache = TRUE)
+require(dplyr)
+require(ggplot2)
+require(GGally)
+require(scales)
+require(lubridate)
+require(arules)
+setwd('~/projects/BI-TECH-CP303/projects/project 3')
+```
+
+
+pairs = read.delim('./data/amazon0302.txt',
+                   sep = '\t',
+                   header = FALSE)
+colnames(pairs) = c('product1', 'product2')
+pairs$product1 = factor(pairs$product1)
+pairs$product2 = factor(pairs$product2)
+
+catalog = read.delim('./data/sample_catalog.tsv',
+                   sep = '\t',
+                   header = TRUE)
+catalog = unique(catalog)                
+
+p = merge(pairs, catalog, by.x = 'product1', by.y = 'id')
+colnames(p) = c("product1", "product2", "avg_rating_1", "categories_1", 
+"downloaded_1", "group_1", "reviews_count_1", "salesrank_1", "title_1")
+p = merge(p, catalog, by.x = 'product2', by.y = 'id')
+colnames(p) = c("product1", "product2", "avg_rating_1", "categories_1", 
+"downloaded_1", "group_1", "reviews_count_1", "salesrank_1", "title_1",
+"avg_rating_2", "categories_2", "downloaded_2", "group_2", "reviews_count_2", 
+"salesrank_2", "title_2")
+
+p = arrange(p, product1, product2)
+
+```{r}
+library(arules)
+library(arulesViz)
+
+trans = read.transactions("./data/people_who_bought", 
+                          format = "basket", 
+                          sep = ',')
+itemInfo(trans) = data.frame(labels = myLabels, level1 = myLevel1)
+
+inspect(trans[1:5])
+summary(trans)
+
+itemFrequencyPlot(trans, topN = 25)
+basket_rules = apriori(trans,
+                       parameter = list(sup = 0.0001, conf = 0.0001, target = 'rules'))
+inspect(basket_rules)
+
+
+
+
+```
+
+
+
+txn = as(pairs, 'transactions')
+
+
+
+
