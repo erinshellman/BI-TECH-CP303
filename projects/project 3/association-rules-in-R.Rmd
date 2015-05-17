@@ -1,7 +1,7 @@
 ---
 title: "Association Rule Mining in R"
 author: "Erin Shellman"
-date: "May 16, 2015"
+date: "May 18, 2015"
 output:
   pdf_document:
     toc: yes
@@ -21,59 +21,87 @@ require(GGally)
 require(scales)
 require(lubridate)
 require(arules)
+require(arulesViz)
 setwd('~/projects/BI-TECH-CP303/projects/project 3')
+bought = read.transactions('./data/people_who_bought.txt', 
+                           format = 'basket', 
+                           sep = ',')
+catalog = read.delim('./data/product_catalog.tsv',
+                     header = TRUE,
+                     sep = '\t')
 ```
 
+## Reading in the data
 
-pairs = read.delim('./data/amazon0302.txt',
-                   sep = '\t',
-                   header = FALSE)
-colnames(pairs) = c('product1', 'product2')
-pairs$product1 = factor(pairs$product1)
-pairs$product2 = factor(pairs$product2)
-
-catalog = read.delim('./data/sample_catalog.tsv',
-                   sep = '\t',
-                   header = TRUE)
-catalog = unique(catalog)                
-
-p = merge(pairs, catalog, by.x = 'product1', by.y = 'id')
-colnames(p) = c("product1", "product2", "avg_rating_1", "categories_1", 
-"downloaded_1", "group_1", "reviews_count_1", "salesrank_1", "title_1")
-p = merge(p, catalog, by.x = 'product2', by.y = 'id')
-colnames(p) = c("product1", "product2", "avg_rating_1", "categories_1", 
-"downloaded_1", "group_1", "reviews_count_1", "salesrank_1", "title_1",
-"avg_rating_2", "categories_2", "downloaded_2", "group_2", "reviews_count_2", 
-"salesrank_2", "title_2")
-
-p = arrange(p, product1, product2)
+The *arules* package read data slightly differently than other packages. 
+Specifically, it has its own `read.transactions` function that can be used to 
+read in columns stored as transactions.
 
 ```{r}
+install.packages('arules', dependencies = TRUE)
 library(arules)
-library(arulesViz)
 
-trans = read.transactions("./data/people_who_bought", 
-                          format = "basket", 
-                          sep = ',')
-itemInfo(trans) = data.frame(labels = myLabels, level1 = myLevel1)
-
-inspect(trans[1:5])
-summary(trans)
-
-itemFrequencyPlot(trans, topN = 25)
-basket_rules = apriori(trans,
-                       parameter = list(sup = 0.0001, conf = 0.0001, target = 'rules'))
-inspect(basket_rules)
+bought = read.transactions('people_who_bought.txt', 
+                           format = 'basket', 
+                           sep = ',')
+catalog = read.delim('product_catalog.tsv',
+                     header = TRUE,
+                     sep = '\t')
+catalog$labels = catalog$id
+catalog$id = NULLinspect(aggregate(trans, itemInfo(trans)[["level1"]]))
 
 
+x = merge(bought@itemInfo, catalog, by.x = 'labels', by.y = 'id')
+itemInfo(bought) = x
 
+head(inspect(aggregate(bought, itemInfo(bought)[["title"]])))
 
+inspect(bought[1:5])
+summary(bought)
+
+itemFrequencyPlot(bought, topN = 25)
 ```
 
+## Creating rules
 
+```{r}
+rules = apriori(bought, 
+                parameter = list(sup = 0.0001, conf = 0.0001, target = 'rules'))
 
-txn = as(pairs, 'transactions')
+inspect(rules)
+inspect(head(sort(rules, by ="lift"), 10))
+```
 
+However, it is clear that going through all the 5668 rules manually is not a viable option. We therefore will introduce different visualization techniques implemented in arulesViz. All implemented visualization techniques share the following interface.
 
+The package *arulesViz* gives us lots of great visualization support.
 
+```{r, eval = FALSE}
+plot(x, 
+     method = NULL, 
+     measure = "support", 
+     shading = "lift", 
+     interactive = FALSE, 
+     data,
+     control = ...)
+```
+where:
 
+  * x is the set of rules to be visualized, 
+  * method is the visualization method, 
+  * measure and shading contain the interest measures used by the plot, 
+  * interactive indicates if we want to interactively explore or just present the rules, 
+  * data can contain the transaction data set used to mine the rules (only necessary for some methods) 
+  * and control is a list with further control arguments to customize the plot.
+
+```{r}
+install.packages('arulesViz', dependencies = TRUE)
+
+# you might need to install Rgraphviz from this repository
+source('http://bioconductor.org/biocLite.R')
+biocLite('Rgraphviz')
+
+library(arulesViz)
+
+plot(rules)
+```
