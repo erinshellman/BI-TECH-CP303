@@ -33,24 +33,42 @@ itemInfo(bought) = catalog
 
 ## Reading in the data
 
-The *arules* package read data slightly differently than other packages. 
+The *arules* package reads in data slightly differently than other packages. 
 Specifically, it has its own `read.transactions` function that can be used to 
-read in columns stored as transactions.
+read columns stored as transactions. 
 
 ```{r, eval = FALSE}
 install.packages('arules', dependencies = TRUE)
 library(arules)
 
+# read in the co-purchased items
 bought = read.transactions('people_who_bought.txt', 
                            format = 'basket', 
                            sep = ',')
+
+# read in the product catalog
 catalog = read.delim('product_catalog.tsv',
                      header = TRUE,
                      sep = '\t'
                      quote = '')
 ```
 
-```{r}
+The file *people_who_bought.txt* consists of rows of co-purchased items, in the 
+form:
+
+| 0,1,2,3,4,5
+| 1,0,2,4,5,15
+| 2,0,11,12,13,14
+| 3,63,64,65,66,67
+
+Where each row represents a "transaction." In reality each row corresponds to a 
+product and the set of items that are frequently purchased together with the
+item.
+
+Once we've read in the itemsets and the catalog, we can append the catalog data
+to the itemsets. This allows us to do convenient things like aggregate at the 
+product category level.
+```{r, warning = FALSE}
 # attach the catalog data onto the item-sets 
 itemInfo(bought) = catalog
 
@@ -62,7 +80,9 @@ summary(bought)
 itemFrequencyPlot(bought, topN = 25)
 ```
 
-Let's explore the data a bit.
+## Exploratory data analysis
+
+We have a new dataset again, so let's explore a bit.
 
 ```{r, warning = FALSE}
 # what does the distribution of salesrank look like?
@@ -83,7 +103,11 @@ ggplot(na.omit(catalog), aes(x = factor(group))) +
   geom_bar()
 ```
 
-## Creating rules
+## Generating rules
+
+In this data set we have a large catalog and relatively few transactions, which
+means for any given item pairing the support will be relatively small (in this 
+case support = 0.0001).
 
 ```{r}
 # run the apriori algorithm
@@ -95,6 +119,10 @@ inspect(head(rules))
 # sort the rules by lift
 inspect(head(sort(rules, by = 'lift'), 10))
 
+# filter by LHS to pull out specific product ids
+rules_subset = subset(rules, (lhs %in% c('241')))
+inspect(rules_subset)
+
 # aggregate the rules over the product type
 group_rules = aggregate(rules, itemInfo(bought)$group)
 inspect(group_rules)
@@ -103,30 +131,28 @@ inspect(group_rules)
 quality(rules) = cbind(quality(rules), coverage = coverage(rules))
 ```
 
-However, it is clear that going through all the 5668 rules manually is not a viable option. We therefore will introduce different visualization techniques implemented in arulesViz. All implemented visualization techniques share the following interface.
-
-The package *arulesViz* gives us lots of great visualization support.
+Cool, now we have 2,601 rules to work with, but inspecting all of them manually 
+sounds like a nightmare. Lucky for us there's a second package called 
+*arulesViz* that gives us lots of great visualization support.
 
 ```{r, eval = FALSE}
+# arules plot template
 plot(x, 
      method = NULL, 
-     measure = "support", 
-     shading = "lift", 
+     measure = 'support', 
+     shading = 'lift', 
      interactive = FALSE, 
      data,
      control = ...)
 ```
 where:
 
-  * x is the set of rules to be visualized, 
-  * method is the visualization method, 
-  * measure and shading contain the interest measures used by the plot, 
-  * interactive indicates if we want to interactively explore or just present the rules, 
-  * data can contain the transaction data set used to mine the rules (only necessary for some methods) 
-  * and control is a list with further control arguments to customize the plot.
-  
-A straight-forward visualization of association rules is to use a scatter plot with two interest measures on the axes. Such a presentation can be found already in an early paper by Bayardo, Jr. and Agrawal (1999) when they discuss sc-optimal rules.
-The default method for plot() for association rules in arulesViz is a scatter plot using support and confidence on the axes. In addition a third measure (default: lift) is used as the color (gray level) of the points. A color key is provided to the right of the plot.
+  * *x*: is the set of rules to be visualized
+  * *method*: the visualization method
+  * *measure*: and shading contain the interest measures used by the plot
+  * *interactive*: indicates whether you want to interactively explore 
+  * *data*: can contain the transaction data set used to mine the rules 
+  * *control*: list with further control arguments to customize the plot
 
 ```{r, eval = FALSE}
 install.packages('arulesViz', dependencies = TRUE)
@@ -138,6 +164,11 @@ biocLite('Rgraphviz')
 library(arulesViz)
 ```
 
+We can start with a visualization of association rules as a scatter plot with 
+two measures on the axes. The default `plot()` for association rules 
+is a scatter plot using support and confidence on the axes. Lift is used as the 
+color of the points.
+
 ```{r}
 plot(rules)
 head(quality(rules))
@@ -146,8 +177,9 @@ head(quality(rules))
 # plot(rules, interactive = TRUE)
 ```
  
- a special version of a scatter plot called Two- key plot. Here support and confidence are used for the x and y-axes and the color of the points is used to indicate “order,” i.e., the number of items contained in the rule. Two-key plots can be produced using the unified interface by:
-
+Another version of the scatter plot called two-key plot. Here support and 
+confidence are used for the x and y-axes and the color of the points indicates 
+the 'order,' *i.e.*, the number of items contained in the rule:
 ```{r}
 plot(rules, shading = 'order')
 ```
@@ -174,5 +206,4 @@ plot(subrules, method = 'graph')
 
 # parallel coordinates plot
 plot(subrules, method = 'paracoord', control = list(reorder = TRUE))
-
 ```
