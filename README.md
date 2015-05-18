@@ -55,9 +55,8 @@ Week | Date | Topic | Dataset
 3 | April 20 | Linear regression extensions | Capital BikeShare 
 4 | April 27 | Logistic regression | Twitter user data: [*bot_or_not.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+2/bot_or_not.tsv)
 5 | May 4 | Trees | Twitter user data 
-6 | May 11 | Association rules | The Million Song Dataset
-7 | May 18 | Clustering | The Million Song Dataset 
-8 | June 1 | Clustering | The Million Song Dataset 
+6 | May 18 | Association rules | Amazon product recommendations: [people_who_bought.txt](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+3/people_who_bought.txt), [product_catalog.tsv](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+3/product_catalog.tsv)
+7 | June 1 | Clustering | Amazon
 9 | June 8 | Sharing your work | None!
 10 | June 15 | Guest panel | None! 
 
