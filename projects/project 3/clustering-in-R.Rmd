@@ -1,0 +1,60 @@
+---
+title: "clustering-in-R"
+author: "Erin Shellman"
+date: "June 1, 2015"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include = FALSE}
+# my set-up
+knitr::opts_chunk$set(cache = TRUE)
+require(dplyr)
+require(ggplot2)
+require(scales)
+require(arules)
+require(arulesViz)
+setwd('~/projects/BI-TECH-CP303/projects/project 3')
+bought = read.transactions('./data/people_who_bought.txt', 
+                           format = 'basket', 
+                           sep = ',')
+catalog = read.delim('./data/product_catalog.tsv',
+                     header = TRUE,
+                     sep = '\t',
+                     quote = '')
+itemInfo(bought) = catalog
+```
+
+```{r}
+# Prepare Data
+mydata <- na.omit(catalog) # listwise deletion of missing
+mydata <- scale(mydata) # standardize variables
+
+categories = as.data.frame(model.matrix(~ group - 1, data = catalog))
+#no_factors = as.data.frame(model.matrix(group ~ . -1, data = catalog))
+
+# set the seed
+set.seed(100)
+
+# put rentals back on
+no_factors$rentals = data$rentals
+
+sub = 
+  catalog %>%
+    select(avg_rating, downloaded, reviews_count, salesrank)
+sub = na.omit(sub)
+
+kmeans = kmeans(sub, 3)
+plot(sub[, 1], sub[, 2], col = kmeans$cluster)
+points(km$centers[,c(1,2)], col=1:3, pch=19, cex=2)
+
+
+
+
+```
