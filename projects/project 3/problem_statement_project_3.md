@@ -4,9 +4,10 @@ Project 3
 
 Product recommendations are ubiquitous today, and it turns out they're fun to make! We're going to jam on some data from the company most famous for product recommendations: Amazon. They need your help to build the next generation of product recommendations for Amazon.com. Use the methods we learned in class to build a recommendation engine for a customer who likes the following titles:
 
-1. Don't Be A Menace To South Central While Drinking Your Juice in the Hood. Id: 5335 ASIN: 6304167725
-2. Data Mining Solutions: Methods and Tools for Solving Real-World Problems. Id: 22025 ASIN: 0471253847
+1. **Don't Be A Menace To South Central While Drinking Your Juice in the Hood**. Id: 5335 ASIN: 6304167725
+2. **Data Mining Solutions: Methods and Tools for Solving Real-World Problems**. Id: 22025 ASIN: 0471253847
 
+Your output will be a description of a recommendation strategy (*e.g.* association rules with lift > 2) and a list of recommended items for each of the items. 
 
 ### Data 
 
@@ -38,6 +39,8 @@ str(catalog)
 ### Tips
 
 * Remember you can pull out the right-hand side of association rules by subsetting: `subset(rules, (lhs %in% c('241')))`. Those associated items could be good recommendations.
+
+* Feel free to include a discussion of how you could test the quality of your recommendations and compare recommendation algorithms.
 
 * Remember that you're the quantitative expert and the client depends on you to help them make data-driven decisions.  It's *your* job to provide clarity and knowledge on the topic, and to present statistical arguments such that a non-techincal audience can understand your findings. 
 
