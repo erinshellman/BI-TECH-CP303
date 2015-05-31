@@ -42,6 +42,9 @@ catalog = read.delim('product_catalog.tsv',
                      header = TRUE,
                      sep = '\t'
                      quote = '')
+
+menace = catalog[catalog$id == 5335, ]
+data_mining = catalog[catalog$id == 22025, ]
 ```
 
 # Preprocessing
@@ -56,6 +59,9 @@ z-distribution with mean = 0 and sd = 1.
 # remove rows containing missing data
 catalog = na.omit(catalog)
 
+# rename row names to be product ids
+row.names(catalog) = catalog$id
+
 # most products are books, music, video or DVDs, so lets focus on those
 table(catalog$group)
 
@@ -64,7 +70,9 @@ sub =
   catalog %>%
     filter(group == 'Book' | group == 'DVD' | 
            group == 'Music' | group == 'Video') %>% 
-    select(avg_rating, downloaded, reviews_count, salesrank, group)
+    select(id, avg_rating, downloaded, reviews_count, salesrank, group)
+rownames(sub) = sub$id
+sub$id = NULL
 ```
 
 Clustering methods need scaled numeric inputs to compute distance metrics. 
@@ -102,7 +110,17 @@ grid.arrange(plot1, plot2, plot3, plot4, ncol = 4)
 # Distance
 
 ```{r}
-euclidean = dist(scaled, method = 'euclidean')
+# Don't be a menace
+menace = sub[rownames(sub) == 5335, ]
+x = 
+  sub %>%
+    filter(video == 1, avg_rating == 4.5) %>%
+    sample_n(20)
+x = rbind(menace, x)
+
+euclidean = dist(x, method = 'euclidean')
+
+hr = hclust(euclidean, members = rownames(x))
 ```
 
 # K-means clustering
@@ -110,9 +128,9 @@ euclidean = dist(scaled, method = 'euclidean')
 ```{r}
 # set the seed
 set.seed(100)
-
+  
 # run k-means clustering
-kmeans = kmeans(sub, 3)
+kmeans = kmeans(sub, 4)
 kmeans$centers
 plot(sub[ , 3], sub[ , 4], col = kmeans$cluster)
 points(kmeans$centers[, c(1, 2)], col = 1:3, pch = 19, cex = 2)
