@@ -1,5 +1,5 @@
 ---
-title: "clustering-in-R"
+title: "Cluster Analysis in R"
 author: "Erin Shellman"
 date: "June 1, 2015"
 output:
@@ -17,8 +17,6 @@ output:
 knitr::opts_chunk$set(cache = TRUE)
 require(dplyr)
 require(ggplot2)
-require(scales)
-require(gridExtra)
 setwd('~/projects/BI-TECH-CP303/projects/project 3')
 catalog = read.delim('./data/product_catalog.tsv',
                      header = TRUE,
@@ -26,41 +24,44 @@ catalog = read.delim('./data/product_catalog.tsv',
                      quote = '')
 ```
 
+# Introduction
+
+This week we'll explore the product catalog a little more closely. We can 
+explore product similarities using clustering and potentially use the resulting
+clusters as a basis for product recommendation.
+
 # Read in data
 
+Just read in the product catalog this time:
+
 ```{r}
-install.packages('cluster', dependencies = TRUE)
-install.packages('gridExtra', dependencies = TRUE)
-library(cluster)
 library(dplyr)
 library(ggplot2)
-library(scales)
-library(gridExtra)
 
 # read in the product catalog
 catalog = read.delim('product_catalog.tsv',
                      header = TRUE,
-                     sep = '\t'
+                     sep = '\t',
                      quote = '')
 
-menace = catalog[catalog$id == 5335, ]
-data_mining = catalog[catalog$id == 22025, ]
+menace = catalog[catalog$labels == 5335, ]
+data_mining = catalog[catalog$labels == 22025, ]
 ```
 
 # Preprocessing
 
 Most clustering techniques work best when the data are centered and scaled.
-Recall that an observation is centered when you subtract from it its mean. An 
-observation is scaled when you divide an observation by its standard deviation.
-When we center and scale a variable, the resulting variable follows a 
-z-distribution with mean = 0 and sd = 1.
+Recall that a variable is centered when you subtract its mean from each 
+observation. A variable is scaled when you divide each observation by 
+the variable standard deviation. When we center and scale a variable, the 
+resulting variable follows a z-distribution with mean = 0 and sd = 1.
 
 ```{r}
+# set the seed
+set.seed(100)
+
 # remove rows containing missing data
 catalog = na.omit(catalog)
-
-# rename row names to be product ids
-row.names(catalog) = catalog$id
 
 # most products are books, music, video or DVDs, so lets focus on those
 table(catalog$group)
@@ -70,14 +71,13 @@ sub =
   catalog %>%
     filter(group == 'Book' | group == 'DVD' | 
            group == 'Music' | group == 'Video') %>% 
-    select(id, avg_rating, downloaded, reviews_count, salesrank, group)
-rownames(sub) = sub$id
-sub$id = NULL
+    select(labels, avg_rating, downloaded, reviews_count, salesrank, group)
+
+head(sub)
 ```
 
-Clustering methods need scaled numeric inputs to compute distance metrics. 
 Before we can scale the data, we need to convert the product group from a factor
-into a numeric value.
+into a numeric value:
 
 ```{r}
 # convert the group into dummy variables
@@ -89,56 +89,67 @@ sub = cbind(sub, group_dummies)
 sub$group = NULL
 
 # scale the data 
-scaled = as.data.frame(scale(sub))
-scaled = as.data.frame(t(scale(t(sub))))
-
-# what is the effect of scaling?
-plot1 = qplot(avg_rating, data = sub, geom = 'histogram')
-plot2 = qplot(downloaded, data = sub, geom = 'histogram')
-plot3 = qplot(reviews_count, data = sub, geom = 'histogram')
-plot4 = qplot(salesrank, data = sub, geom = 'histogram')
-grid.arrange(plot1, plot2, plot3, plot4, ncol = 4)
-
-plot1 = qplot(avg_rating, data = scaled, geom = 'histogram')
-plot2 = qplot(downloaded, data = scaled, geom = 'histogram')
-plot3 = qplot(reviews_count, data = scaled, geom = 'histogram')
-plot4 = qplot(salesrank, data = scaled, geom = 'histogram')
-grid.arrange(plot1, plot2, plot3, plot4, ncol = 4)
-
-```
-
-# Distance
-
-```{r}
-# Don't be a menace
-menace = sub[rownames(sub) == 5335, ]
-x = 
-  sub %>%
-    filter(video == 1, avg_rating == 4.5) %>%
-    sample_n(20)
-x = rbind(menace, x)
-
-euclidean = dist(x, method = 'euclidean')
-
-hr = hclust(euclidean, members = rownames(x))
+scaled = as.data.frame(scale(select(sub, -labels)))
+scaled$labels = sub$labels
 ```
 
 # K-means clustering
 
-```{r}
-# set the seed
-set.seed(100)
-  
-# run k-means clustering
-kmeans = kmeans(sub, 4)
-kmeans$centers
-plot(sub[ , 3], sub[ , 4], col = kmeans$cluster)
-points(kmeans$centers[, c(1, 2)], col = 1:3, pch = 19, cex = 2)
+We have 4 product types, so maybe K = 4 is a good place to start?
 
-ggplot(sub, aes(x = reviews_count, y = salesrank, color = factor(kmeans$cluster))) +
-  geom_point() +
-  #geom_point(aes(kmeans$centers[]) +  
+```{r}  
+# run k-means clustering
+kmeans_cluster = kmeans(select(scaled, -labels), 4)
+
+# check what attributes are in the kmeans object
+attributes(kmeans_cluster)
+
+# Find which cluster the observations belong to
+head(kmeans_cluster$cluster, 10)
+
+# centers
+kmeans_cluster$centers
+
+# plot 4 clusters
+ggplot(sub, 
+       aes(x = reviews_count, 
+           y = salesrank, 
+           color = factor(kmeans_cluster$cluster))) +
+  geom_point(alpha = 0.50) +
   theme_minimal() 
 ```
 
+# Hierarchical Clustering
+
+```{r}
+# Don't be a menace
+menace = scaled[scaled$labels == 5335, ]
+
+# subset to videos only
+videos = 
+  scaled %>%
+    filter(sub$video == 1) %>%
+    sample_n(30)
+videos = unique(rbind(menace, videos))
+
+# compute the euclidean distance
+euclidean = dist(select(videos, -labels), method = 'euclidean')
+
+# attributes
+attributes(euclidean)
+
+# hierarchical clustering
+hier = hclust(euclidean)
+
+# label by id
+hier$labels = videos$labels
+
+# plot dendrogram
+plot(hier)
+
+# look up nearby videos
+catalog[catalog$labels == 35161, ]
+catalog[catalog$labels == 58851, ]
+catalog[catalog$labels == 72902, ]
+```
 
