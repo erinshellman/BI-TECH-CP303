@@ -1,0 +1,130 @@
+---
+title: "Markdown demo"
+author: "Erin Shellman"
+date: "June 8, 2015"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
+  html_document:
+    theme: readable
+    toc: yes
+    toc_depth: 3
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. 
+
+# Code chunks
+
+You can embed an R code chunk like this:
+
+```{r}
+library(ggplot2)
+data(diamonds)
+summary(diamonds)
+```
+
+You can also embed plots, for example:
+
+```{r, echo = FALSE}
+plot(carat ~ price, data = diamonds)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot. There are lots of different arguments we can give the code
+chunks that will change the behavior of how they render:
+
+Table Header | Second Header | Second Header
+------------- | ------------- | -------------
+eval | TRUE | Whether to evaluate the code and include its results
+echo | TRUE | Whether to display code along with its results
+warning | TRUE | Whether to display warnings
+error | FALSE | Whether to display errors
+message | TRUE | Whether to display messages
+tidy | FALSE | Whether to reformat code in a tidy way when displaying it
+results | "markup" | "markup", "asis", "hold", or "hide"
+cache | FALSE | Whether to cache results for future renders
+comment | "##" | Comment character to preface results with
+fig.width | 7 | Width in inches for plots created in chunk
+fig.height | 7 | Height in inches for plots created in chunk
+
+Let's try some and see what happens. Here's a code chunk with just plot size
+arguments:
+```{r plain-jane, fig.width = 3, fig.height = 3}
+ggplot(diamonds, aes(x = carat)) +
+  geom_histogram()
+```
+
+Don't run the code:
+```{r no-run, eval = FALSE, fig.width = 3, fig.height = 3}
+# we get nuthin'
+ggplot(diamonds, aes(x = carat)) +
+  geom_histogram()
+```
+
+Don't print warnings:
+```{r no-warn, warning = FALSE, fig.width = 3, fig.height = 3}
+ggplot(diamonds, aes(x = carat)) +
+  geom_histogram()
+```
+
+Automagically tidy up your code:
+```{r tidy, tidy = TRUE, fig.width = 3, fig.height = 3}
+ggplot(diamonds, aes(x = carat)) +
+  geom_histogram()
+```
+
+And if you want to skip the code...
+```{r no-code, echo = FALSE, fig.width = 3, fig.height = 3}
+ggplot(diamonds, aes(x = carat)) +
+  geom_histogram()
+```
+
+# Formatting headers
+
+You can denote different header sizes with '#.'
+
+# H1
+## H2
+### H3
+#### H4
+##### H5
+###### H6
+
+# Formatting text
+
+Make lists with '*'.
+
+* *this text is in italics*
+* **this text is bold**
+* `this text is in-line code`
+* this text has an equation: $y = \beta_0 + \beta_1x$
+
+> This text is a quoteable quote.
+
+You can also make ordered lists naturally like this:
+
+1. Here's an item
+2. And the second one
+3. The third item has some sub-points
+  * great point
+  * another great point
+  * blah
+  
+# Tables
+
+You can create your own tables like this:
+
+Table Header | Second Header
+------------- | -------------
+Table Cell | Cell 2
+Cell 3 | Cell 4 
+
+Or create them with code!
+
+```{r ktable}
+library(knitr)
+agg = aggregate(price ~ clarity + color, diamonds, mean)
+kable(xtabs(price ~ ., data = agg))
+```
