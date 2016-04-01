@@ -45,6 +45,8 @@ A large component of this course is in-class discussion and providing critical f
 
 Everyone is required to do original work for all projects. You're free to openly discuss the projects and your approaches, just like you would in a professional setting, but reports should be your own.
 
+Students with disabilities requiring addition services can find resources at the [UW Disability Resources for Students](http://depts.washington.edu/uwdrs/) page.
+
 ## Topics 
 
 The lecture notes are available [here](http://erinshellman.github.io/data-mining-starter-kit/#/).
