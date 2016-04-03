@@ -549,12 +549,11 @@ and try out some new figures. What did you learn from your figure?
     
 ## Exploratory data analysis
 
-### Capital Bikeshare
+### Capital Bikeshare data
 
 The *diamonds* data was a good warm-up, but let's dive into the data you'll be 
 working with in the first project. The data are from Washington
-D.C.'s bikeshare program in 2015 and are in the file [*bikeshare_2015.tsv*]() in
-the course repository. 
+D.C.'s bikeshare program in 2015 and are in the file [*bikeshare_2015.tsv*](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/intro-R/bikeshare_2015.tsv) in the course repository. 
 
 ```{r EDA data-read-in, eval = FALSE}
 data = read.delim('/your/dir/bikeshare_2015.tsv',
@@ -568,21 +567,14 @@ a count of the number of rentals, lat/long, and lots of information about
 the surrounding environment. Let's start exploring and see if we can make any 
 preliminary observations.
 
+### Formulating exploratory questions
+
 Throughout the course you'll be tackling business problems
 with data which means you'll need to:
 
 1. formalize the business problem as a data mining process
 2. articulate the solution *i.e.* how will you know when you've answered the question?
 3. help make a decision, *i.e.* what should the business do?
-
-```{r EDA histogram, fig.width = 4, fig.height = 3, warning = FALSE}
-ggplot(data, aes(x = duration_mean)) +
-  geom_histogram(fill = 'steelblue') + # 
-  scale_x_continuous('Rental Duration') +
-  scale_y_continuous('Counts') + 
-  ggtitle("What's the distribution of rental times?") + 
-  theme_minimal()  
-```
 
 Spend some time looking over the data and getting a sense for what types of 
 information are available. When I scan over a data set I create small hypotheses 
@@ -608,7 +600,7 @@ ggplot(data, aes(x = crossing, y = num_rentals)) +
   geom_point() 
 ```
 
-### *ggpairs*
+### Advanced visualizations with *ggpairs*
 
 You might have noticed that there are a lot of variables in the data set (if you
 didn't try running `dim(data)`). It's going to take forever to discover patterns 
@@ -629,10 +621,10 @@ are right-skewed (*i.e.* long tail going towards the right). Finally, the top
 right corner shows the correlation of each comparison. For example the correlation
 between the number of rentals and number of nearby bars is 0.22.
 
-If you like you can customize the upper and lower quadrants and the diagonal. Let's make 
+<!---If you like you can customize the upper and lower quadrants and the diagonal. Let's make 
 scatter plots with a linear smoother on the lower half, correlation values on 
 the upper half, and bar plots on the diagonal. Spend some time staring at the 
-plot and make sure you understand how it's read.
+plot and make sure you understand how it's read. ---->
 
 ```{r commented out ggpairs code, include = FALSE}
 # ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')],
@@ -663,7 +655,7 @@ plot and make sure you understand how it's read.
 We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
 figure below is faceted by the season:-->
 
-```{r ggpairs extended example, eval = FALSE, include = FALSE}
+```{r ggpairs extended example, eval = F, include = FALSE}
 ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'season_desc')],
         lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
         diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
@@ -677,28 +669,32 @@ ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'weather_code')],
         diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
         upper = list(continuous = 'cor', combo = 'facetdensity'),
         axisLabels = 'show', color = 'weather_code')
+
+
 ```
 
-Again we have marginal densities on the diagonal, broken up by season. Not 
+<!---Again we have marginal densities on the diagonal, broken up by season. Not 
 surprisingly there's 4 distinct temperature distributions. We can also see that
-there's a relationship between 
+there's a relationship between ---->
 
 ### Assignment 2
 
-1. Make some hypotheses about which variables are likely to be positively and
-negatively correlated with `duration_mean` and `num_rentals`. Test your hypotheses
-using the plotting and summary methods we've learned so far or by Googling for 
-others. 
+1. We hypothesize that `tourism_artwork` and `railway_level_crossing` are correlated with `duration_mean` and `num_rentals`. Test that hypothesis by using *ggpairs*. What are the correlations?
 
-Solutions: 
-
+```{r assign2A ggpairs , include = F, eval = F, echo = F}
+ggpairs(data[ , c('tourism_artwork', 'railway_level_crossing', 'duration_mean', 'num_rentals')])
+```
+<!---
 correlation of `duration_mean` and `place_of_worship` is -0.24
 correlation of `duration_mean` and `artwork_type_statue` is 0.15
 
 correlation of `num_rentals` and `tourism_artwork` is 0.49
-correlation of `num_rentals` and `railway_level_crossing` is -0.13
+correlation of `num_rentals` and `railway_level_crossing` is -0.13 ---->
 
-2. Something else.
+2. Make some hypotheses about three additional variables that could be positively and
+negatively correlated with `duration_mean` and `num_rentals`. Test your hypotheses
+using the plotting and summary methods we've learned so far or by Googling for others.    
+    * *Self-check*: how do we generate a list of the variable names in the data set?
 
 ### Aggregation and summarization with *dplyr*
 
@@ -787,7 +783,7 @@ ggplot(na.omit(filter(mean_custs_per_day, mean_rentals > 80)),
 Clearly some stations are more successful than others. It's your job in project 
 1 to determine if station success can be predicted by these data.
 
-#### Assignment 3
+### Assignment 3
 
 1. Use combinations of the *dplyr* verbs to familiarize yourself with the data.
 Are you able to identify any interesting patterns?
