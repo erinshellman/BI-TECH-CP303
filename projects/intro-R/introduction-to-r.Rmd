@@ -60,7 +60,7 @@ to tell you, but I will anyway! Here's all the arithmetic operators you can use:
 
 You can type things like this right into R:
 
-```{r}
+```{r 23+45}
 23 + 45
 value = (4.59 / 0.1)^3
 print(value)
@@ -103,7 +103,7 @@ later on.
 Matrices are just like vectors in two-dimensions. They are defined and
 accessed like this:
 
-```{r}
+```{r matrix ex}
 my_matrix = matrix(data = c(1, 2, 3, 4, 5, 6), ncol = 3)
 my_matrix
 
@@ -124,7 +124,7 @@ spreadsheets, they can have column names (*headers*) and can contain data of
 different types, like factors and numerical values. Headers are great because we 
 can reference columns by name!
 
-```{r}
+```{r df intro}
 # collect two vectors in a data frame
 df = data.frame(age = c(10, 20, 45, 37),
                 relationship = c('sister', 'cousin', 'father', 'aunt'))
@@ -147,7 +147,7 @@ are collections of objects indexed by a key. The stuff inside of a list doesn't
 need to be the same dimensions or type, and that makes lists a convenient data
 structure for storing collections of related items:
 
-```{r}
+```{r list intro}
 my_list = list(value = 1, array = c(1,2), another_array = 1:5)
 my_list
 
@@ -161,7 +161,7 @@ store the output in an intermediate object before, say, combining all the
 results. For example, maybe I'm fitting a monthly forecast and I have three 
 years of data. I could write a function that does something like this:
 
-```{r, eval = FALSE}
+```{r loop/list, eval = FALSE}
 while I still have data left:
   loop through data month-by-month:
     fit model
@@ -177,7 +177,7 @@ all my models and their associated attributes.
 There're lots of ways to read data into R, but in this class 
 you can get away with always copying/pasting this:
 
-```{r, eval = FALSE}
+```{r read data code skeleton, eval = FALSE}
 # set your working directory - normally where you data are
 setwd('path/to/your/data')
 
@@ -192,13 +192,13 @@ To get acquainted, we'll use a data set called *diamonds*, that comes with the
 *ggplot2* package. It's a data set containing physical characteristics and prices 
 of about 54,000 diamonds. Loading pre-loaded data in R is simple:
 
-```{r}
+```{r diamonds data load and help}
 help(diamonds)
 data(diamonds)
 ```
 
 Once data are loaded, there are tons of ways to spot-check it:
-```{r} 
+```{r diamonds data explore} 
 dim(diamonds) # print dimensions
 names(diamonds) # print column names
 str(diamonds) # data STRucture
@@ -215,7 +215,7 @@ powerful packages, *ggplot2* and *dplyr*. We'll use *ggplot2* to elegantly
 create rich visualizations and *dplyr* to quickly aggregate and summarize data.
 
 Packages are easy to install and load:
-```{r, message = FALSE, eval = FALSE}
+```{r how-to load packages, message = FALSE, eval = FALSE}
 # install
 install.packages('dplyr', dependencies = TRUE)
 install.packages('ggplot2', dependencies = TRUE)
@@ -233,7 +233,7 @@ library(ggplot2)
 Matrices and data frames are indexed `df[row, col]`.  Leaving either the `row` or `col` 
 element blank tells R to take all rows, or all columns. There are many ways to 
 slice up data frame in R for example:
-```{r}
+```{r diamonds slice/dice}
 # 1. grab a column by name and assign to edu
 price = diamonds[15:20, 'price']
 print(price)
@@ -362,7 +362,7 @@ If you're familiar with R's `base` graphics then
 free to read up on `qplot()` and its uses, but we're going to focus primarily on
 the `ggplot` function for constructing graphics.
 
-```{r, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
+```{r qplot ex, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
 # quick scatterplot made with qplot
 qplot(carat, price, data = diamonds)
 ```
@@ -375,7 +375,7 @@ Every ggplot starts with a line like this:
   `ggplot(dataframe, aes(x = var1, y = var2, ...))` 
 that maps data onto x and y dimensions for our plot, yet to be defined.
 
-```{r, fig.width = 4, fig.height = 3}
+```{r ggplot scatter, fig.width = 4, fig.height = 3}
 # scatter plot
 ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
@@ -417,7 +417,7 @@ the `ggplot` statement, then we tell ggplot what type of plot to make
 colors and annotation.  I highly recommend having this page up when plotting: 
 <http://docs.ggplot2.org/>
 
-```{r, fig.width = 4, fig.height = 3, warning = FALSE}
+```{r ggplot histogram, fig.width = 4, fig.height = 3, warning = FALSE}
 # histogram
 ggplot(diamonds, aes(x = price)) +
   # data mapping
@@ -445,7 +445,7 @@ variable, you use aesthetics. Unlike the histogram above, where we could specify
 the color explicitly in the *geom()*, when the color depends on the value of a
 variable, it goes inside `aes()`.
 
-```{r}
+```{r adjusting aes}
 ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
   geom_point(aes(color = factor(color)), alpha = 0.40) + # draw a scatter plot
@@ -478,7 +478,7 @@ Our colorful carat plot looks pretty good, but there are a lot of points laying
 on top of each other. When you want to compare plots across groups separately 
 you can use a *facet* to split the figure up by category.
 
-```{r}
+```{r factors/faceting}
 ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
   geom_point(alpha = 0.30) + # draw a scatter plot
@@ -502,7 +502,7 @@ Now we can view every grouping individually. Notice how we were able to add a
 smoother to the plot and `facet_wrap` elegantly applied it to each sub-plot.
 How about with bar plots?
 
-```{r}
+```{r facet_wrap}
 ggplot(diamonds, aes(clarity, fill = factor(cut))) + 
   geom_bar() +
   facet_wrap(~ cut) +     
@@ -528,7 +528,7 @@ we're interested in characterizing the joint distributions of carats and cuts.
 These distributions are bumpy and highly right-skewed, so it's difficult to
 ascertain the mean without further annotation.
 
-```{r}
+```{r annotate}
 carat_summary = diamonds %>% group_by(cut) %>% summarize(carat_mean = round(mean(carat), 2))
 
 ggplot(diamonds, aes(x = factor(cut), y = carat)) +
@@ -581,7 +581,7 @@ project you'll need to:
 2. *create* the outcome(s) variables (*e.g.* rentals per day)
 3. use *aggregation* and *summaries* to create model inputs
 
-```{r, eval = FALSE}
+```{r EDA load data, eval = FALSE}
 usage = read.delim('usage_2012.tsv',
                    sep = '\t',
                    header = TRUE)
@@ -616,7 +616,7 @@ The data are basically ready to go (*you're welcome*), but lets use the
 *lubridate* package to convert our timestamps to date objects so that we can 
 do lots convenient things like subtract dates.
 
-```{r}
+```{r lubridate}
 library(lubridate)
 
 is(usage$time_start) # time_start is a factor
@@ -632,7 +632,7 @@ and end times and locations, customer type and lots of data about the season and
 the weather. Let's start exploring and see if we can make any preliminary 
 observations.
 
-```{r, fig.width = 4, fig.height = 3}
+```{r EDA prelim data checks, fig.width = 4, fig.height = 3}
 # How many unique bikes are there?
 length(unique(usage$bike_id))
 
@@ -656,7 +656,7 @@ It's going to take forever to discover patterns like this. Fortunately we can
 use the `ggpairs` function in the *GGally* package to plot continuous variables 
 all at once.
 
-```{r}
+```{r EDA ggpairs}
 library(GGally)
 ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')])
 ```
@@ -666,7 +666,7 @@ scatter plots with a linear smoother on the lower half, correlation values on
 the upper half, and bar plots on the diagonal. Spend some time staring at the 
 plot and make sure you understand how it's read.
 
-```{r, message = FALSE, warning = FALSE}
+```{r ggpairs analysis removed, message = FALSE, warning = FALSE}
 # ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')],
 #           lower = list(continuous = 'smooth', params = c(color = 'steelblue', alpha = 0.60)),
 #           diag = list(continuous = 'bar', params = c(fill = '#AAB6A2')), 
@@ -700,7 +700,7 @@ windy.
 We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
 figure below is faceted by the season:
 
-```{r, message = FALSE, warning = FALSE, eval = FALSE}
+```{r additional ggpairs, message = FALSE, warning = FALSE, eval = FALSE}
 ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'season_desc')],
         lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
         diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
@@ -745,7 +745,7 @@ It is an extremely powerful method of aggregating and summarizing data.
 Ultimately, we want to predict the success of a station, how should we represent
 'success?' Could try number of rentals per day.
 
-```{r, warning = FALSE}
+```{r EDA dplyr getting started, warning = FALSE}
 # almost!
 custs_per_day = usage %>% group_by(as.Date(time_start)) %>% summarize(no_rentals = n())
 head(custs_per_day)
