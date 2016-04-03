@@ -5,7 +5,7 @@ date: "April 4, 2016"
 output:
   pdf_document:
     toc: yes
-    toc_depth: 2
+    toc_depth: 3
   html_document:
     theme: readable
     toc: yes
@@ -279,55 +279,7 @@ filter_by_pipe = diamonds %>% filter(carat > 0.40) %>% select(carat, cut, price)
 head(filter_by_pipe)
 ```
 
-### Getting help
 
-#### R docs
-
-You can access documentation for any function in R by typing `help(function_name)` or 
-`?(function_name)`. The help files conform to a standard format so that they're easy 
-to navigate. You'll probably end up reading the *usage*, *arguments*, *value* 
-and *examples* sections most often. The *usage* section describes how to call 
-the function, *arguments* lists all the values that can be set in the call, 
-*value* describes what information the function call will return to you, and 
-*examples* are typically self-contained chunks of code that you can copy and 
-paste into the console.
-
-#### The Internets
-
-Sometimes it's faster and easier to get help with Google. The first step of my 
-troubleshooting workflow is typing questions literally into Google, with a few specifics about
-the language of the solution I'm looking for.  For example, "R ggplot2 how to 
-change legend font size" returns the following top 3 links:
-
-1. [Cookbook for R » Legends (ggplot2)](http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/) 
-2. [r - increase legend font size ggplot2 - Stack Overflow](http://stackoverflow.com/questions/20407773/increase-legend-font-size-ggplot2)
-3. [theme. ggplot2 0.9.2.1](http://docs.ggplot2.org/0.9.2.1/theme.html)
-
-all of which answer the question. The first link is worth bookmarking. 
-It's a page of plots with associated code so you can easily find an example that 
-looks like what you want. The second is another phenomenal resource 
-called Stackoverflow, which is a public forum for asking programming questions and
-getting answers from the public. I use this website probably over 50 times a day, and I bet you
-will too. The last link is the *ggplot2* documentation that lists all the 
-arguments in the `theme()` element, one of which is `legend.text`. If you're new
-to R (and even if you're not) you're going to have to look a lot of things up.
-If you're stuck, don't spin your wheels, just start typing the problem into 
-Google and you might be surprised at how easy it is to find solutions. 
-
-#### Useful links
-
-* http://www.statmethods.net/
-* http://adv-r.had.co.nz/
-* http://adv-r.had.co.nz/Style.html
-* http://www.cookbook-r.com/
-* http://stackoverflow.com/questions/tagged/r-faq%20
-
-#### Classmates
-
-Finally, ask your classmates! As a professional data analyst you likely won't
-be working alone. If you're stuck, chances are that your classmates are too.
-Even if not, sometimes getting a fresh set of eyes on your code is all you need
-to find little bugs. Help each other out!
 
 #### Self-check
 
@@ -797,3 +749,53 @@ Are you able to identify any interesting patterns?
 2. Need more specific questions.
 
 ** Save your code! **
+
+## Getting help
+
+### R docs
+
+You can access documentation for any function in R by typing `help(function_name)` or 
+`?(function_name)`. The help files conform to a standard format so that they're easy 
+to navigate. You'll probably end up reading the *usage*, *arguments*, *value* 
+and *examples* sections most often. The *usage* section describes how to call 
+the function, *arguments* lists all the values that can be set in the call, 
+*value* describes what information the function call will return to you, and 
+*examples* are typically self-contained chunks of code that you can copy and 
+paste into the console.
+
+### The Internets
+
+Sometimes it's faster and easier to get help with Google. The first step of my 
+troubleshooting workflow is typing questions literally into Google, with a few specifics about
+the language of the solution I'm looking for.  For example, "R ggplot2 how to 
+change legend font size" returns the following top 3 links:
+
+1. [Cookbook for R » Legends (ggplot2)](http://www.cookbook-r.com/Graphs/Legends_(ggplot2)/) 
+2. [r - increase legend font size ggplot2 - Stack Overflow](http://stackoverflow.com/questions/20407773/increase-legend-font-size-ggplot2)
+3. [theme. ggplot2 0.9.2.1](http://docs.ggplot2.org/0.9.2.1/theme.html)
+
+all of which answer the question. The first link is worth bookmarking. 
+It's a page of plots with associated code so you can easily find an example that 
+looks like what you want. The second is another phenomenal resource 
+called Stackoverflow, which is a public forum for asking programming questions and
+getting answers from the public. I use this website probably over 50 times a day, and I bet you
+will too. The last link is the *ggplot2* documentation that lists all the 
+arguments in the `theme()` element, one of which is `legend.text`. If you're new
+to R (and even if you're not) you're going to have to look a lot of things up.
+If you're stuck, don't spin your wheels, just start typing the problem into 
+Google and you might be surprised at how easy it is to find solutions. 
+
+### Classmates
+
+Finally, ask your classmates! As a professional data analyst you likely won't
+be working alone. If you're stuck, chances are that your classmates are too.
+Even if not, sometimes getting a fresh set of eyes on your code is all you need
+to find little bugs. Help each other out!
+
+### Useful links
+
+* http://www.statmethods.net/
+* http://adv-r.had.co.nz/
+* http://adv-r.had.co.nz/Style.html
+* http://www.cookbook-r.com/
+* http://stackoverflow.com/questions/tagged/r-faq%20
