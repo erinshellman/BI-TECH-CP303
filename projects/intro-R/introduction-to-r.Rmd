@@ -214,26 +214,6 @@ tail(diamonds, 3) # print bottom 3 rows
 summary(diamonds) # summarize the columns
 ```
 
-### Installing and loading packages
-
-One of the greatest strengths of R is the active community that creates powerful
-tools and releases them publicly as R *packages*. Today we'll learn about two 
-powerful packages, *ggplot2* and *dplyr*. We'll use *ggplot2* to elegantly 
-create rich visualizations and *dplyr* to quickly aggregate and summarize data.
-
-Packages are easy to install and load:
-```{r load packages, message = FALSE, eval = FALSE}
-# install
-install.packages('dplyr', dependencies = TRUE)
-install.packages('ggplot2', dependencies = TRUE)
-install.packages('GGally', dependencies = TRUE)
-install.packages('scales', dependencies = TRUE)
-install.packages('lubridate', dependencies = TRUE)
-
-# load
-library(dplyr)
-library(ggplot2)
-```
 
 ### Slicing and dicing
 
@@ -279,13 +259,32 @@ filter_by_pipe = diamonds %>% filter(carat > 0.40) %>% select(carat, cut, price)
 head(filter_by_pipe)
 ```
 
-
-
 #### Self-check
 
 1. How many diamonds cost less than $500?
 2. How many diamonds cost at least $15,000?
 3. What is the range of prices for diamonds of color D?
+
+### Installing and loading packages
+
+One of the greatest strengths of R is the active community that creates powerful
+tools and releases them publicly as R *packages*. Today we'll learn about two 
+powerful packages, *ggplot2* and *dplyr*. We'll use *ggplot2* to elegantly 
+create rich visualizations and *dplyr* to quickly aggregate and summarize data.
+
+Packages are easy to install and load:
+```{r load packages, message = FALSE, eval = FALSE}
+# install
+install.packages('dplyr', dependencies = TRUE)
+install.packages('ggplot2', dependencies = TRUE)
+install.packages('GGally', dependencies = TRUE)
+install.packages('scales', dependencies = TRUE)
+install.packages('lubridate', dependencies = TRUE)
+
+# load
+library(dplyr)
+library(ggplot2)
+```
 
 ## Graphics
 
