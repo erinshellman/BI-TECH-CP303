@@ -716,8 +716,9 @@ We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The
 figure below is faceted by the season:
 
 ```{r ggpairs extended example, eval = F, include = FALSE}
+data$season = factor(data$season, levels = c('Winter', 'Spring', 'Summer', 'Autumn'))
 ggpairs(data[ , c('bar', 'restaurant', 'duration_mean', 'num_rentals', 'season')],
-        color = 'season')
+        colour = 'season')
 ```
 
 ### Assignment 1
