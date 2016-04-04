@@ -12,3 +12,5 @@ node_modules
 index.html
 .sass-cache/
 .Rproj.user
+*_cache
+*_files
