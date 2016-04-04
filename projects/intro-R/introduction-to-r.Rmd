@@ -3,27 +3,33 @@ title: 'Introduction to R: making visuals and exploratory data analysis'
 author: "Erin Shellman"
 date: "April 4, 2016"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 3
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, 
+                      error = FALSE, fig.align = 'center')
+
 require(dplyr)
 require(ggplot2)
-require(GGally)
-require(scales)
-require(lubridate)
+#require(GGally)
+#require(scales)
+#require(lubridate)
+
+data = read.delim('bikeshare_2015.tsv',
+                  header = TRUE,
+                  sep = '\t')
 ```
 
-## Preparation 
+# Preparation 
 
-### Strap in!
+## Strap in!
 
 Exploratory data analysis (EDA) is the second step of the data mining process, 
 and it's a perfect way to get acquainted with our tools. This notebook is a 
@@ -60,7 +66,7 @@ to tell you, but I will anyway! Here's all the arithmetic operators you can use:
 
 You can type things like this right into R:
 
-```{r}
+```{r calculator examples}
 23 + 45
 value = (4.59 / 0.1)^3
 print(value)
@@ -103,7 +109,7 @@ later on.
 Matrices are just like vectors in two-dimensions. They are defined and
 accessed like this:
 
-```{r}
+```{r matrix ex}
 my_matrix = matrix(data = c(1, 2, 3, 4, 5, 6), ncol = 3)
 my_matrix
 
@@ -124,7 +130,7 @@ spreadsheets, they can have column names (*headers*) and can contain data of
 different types, like factors and numerical values. Headers are great because we 
 can reference columns by name!
 
-```{r}
+```{r df example}
 # collect two vectors in a data frame
 df = data.frame(age = c(10, 20, 45, 37),
                 relationship = c('sister', 'cousin', 'father', 'aunt'))
@@ -147,7 +153,7 @@ are collections of objects indexed by a key. The stuff inside of a list doesn't
 need to be the same dimensions or type, and that makes lists a convenient data
 structure for storing collections of related items:
 
-```{r}
+```{r list ex}
 my_list = list(value = 1, array = c(1,2), another_array = 1:5)
 my_list
 
@@ -161,7 +167,7 @@ store the output in an intermediate object before, say, combining all the
 results. For example, maybe I'm fitting a monthly forecast and I have three 
 years of data. I could write a function that does something like this:
 
-```{r, eval = FALSE}
+```{r list/loop ex, eval = FALSE}
 while I still have data left:
   loop through data month-by-month:
     fit model
@@ -177,7 +183,7 @@ all my models and their associated attributes.
 There're lots of ways to read data into R, but in this class 
 you can get away with always copying/pasting this:
 
-```{r, eval = FALSE}
+```{r set path/load data package skeleton, eval = FALSE}
 # set your working directory - normally where you data are
 setwd('path/to/your/data')
 
@@ -192,13 +198,14 @@ To get acquainted, we'll use a data set called *diamonds*, that comes with the
 *ggplot2* package. It's a data set containing physical characteristics and prices 
 of about 54,000 diamonds. Loading pre-loaded data in R is simple:
 
-```{r}
+Once data are loaded, there are tons of ways to spot-check it:
+```{r diamonds load and help}
 help(diamonds)
 data(diamonds)
 ```
 
 Once data are loaded, there are tons of ways to spot-check it:
-```{r} 
+```{r diamonds bkgd EDA} 
 dim(diamonds) # print dimensions
 names(diamonds) # print column names
 str(diamonds) # data STRucture
@@ -207,33 +214,14 @@ tail(diamonds, 3) # print bottom 3 rows
 summary(diamonds) # summarize the columns
 ```
 
-### Installing and loading packages
-
-One of the greatest strengths of R is the active community that creates powerful
-tools and releases them publicly as R *packages*. Today we'll learn about two 
-powerful packages, *ggplot2* and *dplyr*. We'll use *ggplot2* to elegantly 
-create rich visualizations and *dplyr* to quickly aggregate and summarize data.
-
-Packages are easy to install and load:
-```{r, message = FALSE, eval = FALSE}
-# install
-install.packages('dplyr', dependencies = TRUE)
-install.packages('ggplot2', dependencies = TRUE)
-install.packages('GGally', dependencies = TRUE)
-install.packages('scales', dependencies = TRUE)
-install.packages('lubridate', dependencies = TRUE)
-
-# load
-library(dplyr)
-library(ggplot2)
-```
 
 ### Slicing and dicing
 
 Matrices and data frames are indexed `df[row, col]`.  Leaving either the `row` or `col` 
 element blank tells R to take all rows, or all columns. There are many ways to 
 slice up data frame in R for example:
-```{r}
+
+```{r diamonds slice/dice}
 # 1. grab a column by name and assign to edu
 price = diamonds[15:20, 'price']
 print(price)
@@ -269,7 +257,33 @@ head(
 # 8. or, even cooler, we can use the 'pipe' notation
 filter_by_pipe = diamonds %>% filter(carat > 0.40) %>% select(carat, cut, price)
 head(filter_by_pipe)
+```
 
+#### Self-check
+
+1. How many diamonds cost less than $500?
+2. How many diamonds cost at least $15,000?
+3. What is the range of prices for diamonds of color D?
+
+### Installing and loading packages
+
+One of the greatest strengths of R is the active community that creates powerful
+tools and releases them publicly as R *packages*. Today we'll learn about two 
+powerful packages, *ggplot2* and *dplyr*. We'll use *ggplot2* to elegantly 
+create rich visualizations and *dplyr* to quickly aggregate and summarize data.
+
+Packages are easy to install and load:
+```{r load packages, message = FALSE, eval = FALSE}
+# install
+install.packages('dplyr', dependencies = TRUE)
+install.packages('ggplot2', dependencies = TRUE)
+install.packages('GGally', dependencies = TRUE)
+install.packages('scales', dependencies = TRUE)
+install.packages('lubridate', dependencies = TRUE)
+
+# load
+library(dplyr)
+library(ggplot2)
 ```
 
 ### Getting help
@@ -307,14 +321,6 @@ to R (and even if you're not) you're going to have to look a lot of things up.
 If you're stuck, don't spin your wheels, just start typing the problem into 
 Google and you might be surprised at how easy it is to find solutions. 
 
-#### Useful links
-
-* http://www.statmethods.net/
-* http://adv-r.had.co.nz/
-* http://adv-r.had.co.nz/Style.html
-* http://www.cookbook-r.com/
-* http://stackoverflow.com/questions/tagged/r-faq%20
-
 #### Classmates
 
 Finally, ask your classmates! As a professional data analyst you likely won't
@@ -322,11 +328,13 @@ be working alone. If you're stuck, chances are that your classmates are too.
 Even if not, sometimes getting a fresh set of eyes on your code is all you need
 to find little bugs. Help each other out!
 
-#### Self-check
+#### Useful links
 
-1. How many diamonds cost less than $500?
-2. How many diamonds cost at least $15,000?
-3. What is the range of prices for diamonds of color D?
+* http://www.statmethods.net/
+* http://adv-r.had.co.nz/
+* http://adv-r.had.co.nz/Style.html
+* http://www.cookbook-r.com/
+* http://stackoverflow.com/questions/tagged/r-faq%20
 
 ## Graphics
 
@@ -348,24 +356,12 @@ method to do this.
 the extent that they enhance the visualization's narrative.
 * Figures **always** have labeled axes!! (ok, this one is mine.)
 
-#### Visualization with *ggplot2*
-
-### Introduction
+### Introduction to *ggplot2*
 
 R has three core plotting systems, *base*, *lattice* and *ggplot2*.
 In this course we'll use the plotting library *ggplot2* because it 
 combines the best parts of the other two plotting systems and uses a consistent 
 syntax that makes plot code intuitive and reusable.
-
-If you're familiar with R's `base` graphics then 
-[`qplot()`](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
-free to read up on `qplot()` and its uses, but we're going to focus primarily on
-the `ggplot` function for constructing graphics.
-
-```{r, fig.width = 4, fig.height = 3, fig.cap = 'test caption'}
-# quick scatterplot made with qplot
-qplot(carat, price, data = diamonds)
-```
 
 Plot objects in *ggplot2* are made up of *geoms* and *aesthetics*. Geometric 
 objects, or *geoms*, describe the type of plot, *e.g.* scatter or boxplot. 
@@ -373,9 +369,43 @@ objects, or *geoms*, describe the type of plot, *e.g.* scatter or boxplot.
 
 Every ggplot starts with a line like this:
   `ggplot(dataframe, aes(x = var1, y = var2, ...))` 
-that maps data onto x and y dimensions for our plot, yet to be defined.
+that maps data onto x and y dimensions for our plot, yet to be defined. If you 
+run the aforementioned plotting code what do you get?
 
-```{r, fig.width = 4, fig.height = 3}
+```{r ggplot intro no layers, fig.width = 4, fig.height = 3}
+ggplot(diamonds, aes(x = carat, y = price))
+```
+
+A blank coordinate system with *x-* and *y-*axis labels. Why? Well, you've 
+told ggplot2 how to map data to the coordinates x and y, but you haven't told it
+how to draw that mapping. We tell ggplot how to draw using *geoms*.
+
+```{r ggplot intro scatter, fig.width = 4, fig.height = 3}
+ggplot(diamonds, aes(x = carat, y = price)) + geom_point()
+```
+
+Think of the plots as being built up as layers. First we map the variables with 
+the `ggplot` statement, then we tell ggplot what type of plot to make 
+(e.g. scatter, histogram, bar plot, etc).
+
+```{r ggplot intro histogram, fig.width = 4, fig.height = 3}
+ggplot(diamonds, aes(x = carat)) + geom_histogram()
+```
+
+Finally, we can layer on nice labels, 
+colors and annotation. I highly recommend having this page up when plotting: 
+<http://docs.ggplot2.org/>
+
+```{r ggplot intro title, fig.width = 4, fig.height = 3}
+ggplot(diamonds, aes(x = carat, y = price)) +
+  geom_point() + 
+  scale_x_continuous('Carat') + # axis labels 
+  scale_y_continuous('Price ($)') + 
+  ggtitle('Are higher carat more expensive?') + 
+  theme_minimal() # Themes? Score! How does the plot change w/wo it?
+```
+
+```{r ggplot diamond scatter2, fig.width = 4, fig.height = 3}
 # scatter plot
 ggplot(diamonds, aes(x = carat, y = price)) +
   # data mapping
@@ -385,13 +415,7 @@ ggplot(diamonds, aes(x = carat, y = price)) +
   scale_y_continuous('Price (USD)') + 
   # theme elements
   ggtitle('Are higher carat more expensive?') + 
-  theme_minimal() + # simpler colors. how does it look if you remove it?
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  theme_minimal() 
 
 # scatter plot
 ggplot(diamonds, aes(x = carat, y = price)) +
@@ -402,22 +426,10 @@ ggplot(diamonds, aes(x = carat, y = price)) +
   scale_y_continuous('Price (USD)') + 
   # theme elements
   ggtitle('Are higher carat more expensive?') + 
-  theme_minimal() + # simpler colors. how does it look if you remove it?
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  theme_minimal()
 ```
 
-Think of *ggplot*s as being built up as layers. First we map the variables with 
-the `ggplot` statement, then we tell ggplot what type of plot to make 
-(e.g. scatter, histogram, bar plot, etc).  Finally, we can layer on nice labels, 
-colors and annotation.  I highly recommend having this page up when plotting: 
-<http://docs.ggplot2.org/>
-
-```{r, fig.width = 4, fig.height = 3, warning = FALSE}
+```{r ggplot diamond histogram2, fig.width = 4, fig.height = 3}
 # histogram
 ggplot(diamonds, aes(x = price)) +
   # data mapping
@@ -427,16 +439,18 @@ ggplot(diamonds, aes(x = price)) +
   scale_y_continuous('Counts') + 
   # theme elements
   ggtitle("What's the distribution of prices?") + 
-  theme_minimal() + 
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  theme_minimal()
 ```
 
-See how much of that code we were able to reuse?
+If you're familiar with R's `base` graphics then 
+[`qplot()`](http://docs.ggplot2.org/0.9.3.1/qplot.html) will seem natural.  Feel 
+free to read up on `qplot()` and its uses, but we're going to focus primarily on
+the `ggplot` function for constructing graphics.
+
+```{r qplot ex, fig.width = 4, fig.height = 3}
+# quick scatterplot made with qplot
+qplot(carat, price, data = diamonds)
+```
 
 ### Aesthetics 
 
@@ -445,22 +459,13 @@ variable, you use aesthetics. Unlike the histogram above, where we could specify
 the color explicitly in the *geom()*, when the color depends on the value of a
 variable, it goes inside `aes()`.
 
-```{r}
+```{r aes in geom ex}
 ggplot(diamonds, aes(x = carat, y = price)) +
-  # data mapping
   geom_point(aes(color = factor(color)), alpha = 0.40) + # draw a scatter plot
-  # plot labeling
   scale_x_continuous('Carat') +
   scale_y_continuous('Price (USD)') +
   scale_color_discrete('Color') + # legend title
-  # theme elements
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  theme_minimal()
 ```
 
 ### Factors
@@ -478,48 +483,36 @@ Our colorful carat plot looks pretty good, but there are a lot of points laying
 on top of each other. When you want to compare plots across groups separately 
 you can use a *facet* to split the figure up by category.
 
-```{r}
+```{r factors and facetting}
 ggplot(diamonds, aes(x = carat, y = price)) +
-  # data mapping
-  geom_point(alpha = 0.30) + # draw a scatter plot
+  geom_point(alpha = 0.30) +
   geom_smooth(method = 'lm') + 
   facet_wrap(~ cut) +
-  # plot labeling
   scale_x_continuous('Carat') +
   scale_y_continuous('Price (USD)') +
-  scale_color_discrete('Color') + # legend title
-  # theme elements
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  scale_color_discrete('Color') +
+  theme_minimal() 
 ```
 
 Now we can view every grouping individually. Notice how we were able to add a 
 smoother to the plot and `facet_wrap` elegantly applied it to each sub-plot.
 How about with bar plots?
 
-```{r}
+```{r facet_wrap}
 ggplot(diamonds, aes(clarity, fill = factor(cut))) + 
   geom_bar() +
   facet_wrap(~ cut) +     
-  # plot labeling
   scale_x_discrete('Clarity') +
   scale_y_continuous('Count') +
-  scale_fill_discrete('Cut') + # legend title
-  # theme elements
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 6),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  scale_fill_discrete('Cut') + 
+  theme_minimal() 
 ```
 
-### Annotation
+<!--### Annotation-->
+
+### Assignment 1
+
+One or two questions that can be answered with a figure and dplyr.
 
 Annotation on a figure can add clarity and help the audience understand the 
 message.  A lot of these features are not necessary for exploratory analyses,
@@ -528,7 +521,7 @@ we're interested in characterizing the joint distributions of carats and cuts.
 These distributions are bumpy and highly right-skewed, so it's difficult to
 ascertain the mean without further annotation.
 
-```{r}
+```{r dplyr+ggplot assignment 1}
 carat_summary = diamonds %>% group_by(cut) %>% summarize(carat_mean = round(mean(carat), 2))
 
 ggplot(diamonds, aes(x = factor(cut), y = carat)) +
@@ -541,17 +534,11 @@ ggplot(diamonds, aes(x = factor(cut), y = carat)) +
   scale_y_continuous('Carat') +
   scale_fill_discrete('Cut') + # legend title
   # theme elements
-  theme_minimal() +
-  theme(
-    axis.text.x = element_text(size = 13),
-    axis.text.y = element_text(size = 13),
-    title = element_text(size = 12),
-    axis.title = element_text(size = 15),
-    axis.ticks = element_blank())
+  theme_minimal()
 ```
 
 Ignoring the quick aggregation we did for now, we used `geom_text` to write the
-mean carat of each cut on top of the violin plot. Also we drew the range of those
+mean carat of each cut inside of the violin plot. Also we drew the range of those
 means using `geom_hline` which lets us quickly assess the spread in means. We'll
 talk about that cool aggregation step in detail in the next section.
 
@@ -562,111 +549,84 @@ and try out some new figures. What did you learn from your figure?
     
 ## Exploratory data analysis
 
-### Capital Bikeshare
+### Capital Bikeshare data
 
-The *diamonds* data set was a good warm-up, but let's dive into data set we'll be 
-working with for the first three weeks of class. These data are from Washington
-D.C.'s bikeshare program in 2012, and are split into three files. The first file 
-called 
-[*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv) contains each rental event. The second file, called 
-[*daily_weather.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv)
-, contains normalized DC weather data from 2012. Finally
-[*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv) 
-contains geographical data about the stations like lat/long as 
-well as counts of nearby amenities and road features. Let's go through a quick 
-exploratory data analysis of the usage data keeping in mind that for the first 
-project you'll need to:
+The *diamonds* data was a good warm-up, but let's dive into the data you'll be 
+working with in the first project. The data are from Washington
+D.C.'s bikeshare program in 2015 and are in the file [*bikeshare_2015.tsv*](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/intro-R/bikeshare_2015.tsv) in the course repository. 
+
+```{r EDA data-read-in, eval = FALSE}
+data = read.delim('/your/dir/bikeshare_2015.tsv',
+                  header = TRUE,
+                  sep = '\t')
+```
+
+Read the data in using the `read.delim` function previously described and type 
+`head(data)` to inspect the data set. There's a station name, rental duration, 
+a count of the number of rentals, lat/long, and lots of information about 
+the surrounding environment. Let's start exploring and see if we can make any 
+preliminary observations.
+
+### Formulating exploratory questions
+
+Throughout the course you'll be tackling business problems
+with data which means you'll need to:
 
 1. formalize the business problem as a data mining process
-2. *create* the outcome(s) variables (*e.g.* rentals per day)
-3. use *aggregation* and *summaries* to create model inputs
-
-```{r, eval = FALSE}
-usage = read.delim('usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-weather = read.delim('daily_weather.tsv',
-                   sep = '\t',
-                   header = TRUE)
-```
-
-```{r, echo = FALSE}
-setwd('~/projects/BI-TECH-CP303/projects/project 1')
-usage = read.delim('./data/usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-stations = read.delim('./data/stations.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-weather = read.delim('./data/daily_weather.tsv',
-                   sep = '\t',
-                   header = TRUE)
-```
+2. articulate the solution *i.e.* how will you know when you've answered the question?
+3. help make a decision, *i.e.* what should the business do?
 
 Spend some time looking over the data and getting a sense for what types of 
 information are available. When I scan over a data set I create small hypotheses 
 in my mind and think about the data I'd need to disprove them. For example, 
-I see a dummy variable called *is_holiday*, I wonder if the number of rentals is
-higher on holidays? 
+I see a variable called *traffic_signals*, I wonder if rentals would be lower in
+areas with more traffic signals because people don't want to bike around cars? 
 
-The data are basically ready to go (*you're welcome*), but lets use the 
-*lubridate* package to convert our timestamps to date objects so that we can 
-do lots convenient things like subtract dates.
+```{r EDA ride duration, fig.width = 4, fig.height = 3}
+# How many stations are there?
+length(data$station)
 
-```{r}
-library(lubridate)
+# What's the ride duration distribution like?
+summary(data$duration_mean)
 
-is(usage$time_start) # time_start is a factor
+ggplot(data, aes(x = duration_mean)) +
+  geom_histogram() + # 
+  scale_x_continuous('Ride Duration') +
+  scale_y_continuous('Counts') + 
+  ggtitle("What's the distribution of rental times?") 
 
-usage$time_start = ymd_hms(usage$time_start)
-usage$time_end = ymd_hms(usage$time_end)
-
-is(usage$time_start) # And now it's POSIXct (a date)
+# Is there a relationship between the number of crosswalks nearby and rentals?
+ggplot(data, aes(x = crossing, y = num_rentals)) +
+  geom_point() 
 ```
 
-We can use `head(usage)` to start inspecting the data. We have a bike id, start 
-and end times and locations, customer type and lots of data about the season and
-the weather. Let's start exploring and see if we can make any preliminary 
-observations.
+### Advanced visualizations with *ggpairs*
 
-```{r, fig.width = 4, fig.height = 3}
-# How many unique bikes are there?
-length(unique(usage$bike_id))
+You might have noticed that there are a lot of variables in the data set (if you
+didn't try running `dim(data)`). It's going to take forever to discover patterns 
+one plot at a time. Fortunately there's a cool function called `ggpairs` 
+in the *GGally* package to plot continuous variables as a matrix.
 
-# How many unique stations are there?
-length(unique(usage$station_start))
-
-# What's the temperature distribution like?
-summary(weather$temp)
-ggplot(weather, aes(x = temp)) +
-  geom_density() +
-  theme_minimal()
-
-ggplot(weather, aes(x = humidity)) +
-  geom_density() +
-  theme_minimal()
+```{r ggpairs ex}
+library(GGally) # you might have to install it first
+ggpairs(data[ , c('bar', 'restaurant', 'duration_mean', 'num_rentals')])
 ```
 
-### *ggpairs*
+Whoa, what are we looking at here? We have four variables which are shown on 
+both the *x-* and *y-*axes. In the lower left corner are scatterplots showing multiple
+comparisons. For example, the very bottom left-most tile shows the relationship 
+between the number of rentals and the number of nearby bars. The diagonal shows
+the marginal distribution of each variable, which shows us that all four variables
+are right-skewed (*i.e.* long tail going towards the right). Finally, the top 
+right corner shows the correlation of each comparison. For example the correlation
+between the number of rentals and number of nearby bars is 0.22.
 
-It's going to take forever to discover patterns like this. Fortunately we can 
-use the `ggpairs` function in the *GGally* package to plot continuous variables 
-all at once.
-
-```{r}
-library(GGally)
-ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')])
-```
-
-We can customize the upper and lower quadrants and the diagonal. Let's make 
+<!---If you like you can customize the upper and lower quadrants and the diagonal. Let's make 
 scatter plots with a linear smoother on the lower half, correlation values on 
 the upper half, and bar plots on the diagonal. Spend some time staring at the 
-plot and make sure you understand how it's read.
+plot and make sure you understand how it's read. ---->
 
-```{r, message = FALSE, warning = FALSE}
+```{r commented out ggpairs code, include = FALSE}
 # ggpairs(weather[ , c('temp', 'subjective_temp', 'humidity', 'windspeed')],
 #           lower = list(continuous = 'smooth', params = c(color = 'steelblue', alpha = 0.60)),
 #           diag = list(continuous = 'bar', params = c(fill = '#AAB6A2')), 
@@ -691,16 +651,11 @@ plot and make sure you understand how it's read.
 
 ```
 
-Immediately we can see that there's a strong linear relationship between the
-actual temperature and the subjective temperature. It would be a red flag if 
-there wasn't! Similarly there is a negative relationship between humidity and 
-wind speed suggesting that when it's more humid, it's less
-windy. 
-
+<!--TODO: update this.
 We can do faceting in *ggpairs* plots just like we did with *ggplot2*. The 
-figure below is faceted by the season:
+figure below is faceted by the season:-->
 
-```{r, message = FALSE, warning = FALSE, eval = FALSE}
+```{r ggpairs extended example, eval = F, include = FALSE}
 ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'season_desc')],
         lower = list(continuous = 'points', combo = 'facetdensity', params = list(alpha = 0.70)),
         diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
@@ -714,20 +669,47 @@ ggpairs(weather[ , c('temp', 'humidity', 'windspeed', 'weather_code')],
         diag = list(continuous = 'density', params = list(size = 0.75, alpha = 0.70)), 
         upper = list(continuous = 'cor', combo = 'facetdensity'),
         axisLabels = 'show', color = 'weather_code')
+
+
 ```
 
-Again we have marginal densities on the diagonal, broken up by season. Not 
+<!---Again we have marginal densities on the diagonal, broken up by season. Not 
 surprisingly there's 4 distinct temperature distributions. We can also see that
-there's a relationship between 
+there's a relationship between ---->
+
+### Assignment 2
+
+1. We hypothesize that `tourism_artwork` and `railway_level_crossing` are correlated with `duration_mean` and `num_rentals`. Test that hypothesis by using *ggpairs*. What are the correlations?
+
+```{r assign2A ggpairs , include = F, eval = F, echo = F}
+ggpairs(data[ , c('tourism_artwork', 'railway_level_crossing', 'duration_mean', 'num_rentals')])
+```
+<!---
+correlation of `duration_mean` and `place_of_worship` is -0.24
+correlation of `duration_mean` and `artwork_type_statue` is 0.15
+
+correlation of `num_rentals` and `tourism_artwork` is 0.49
+correlation of `num_rentals` and `railway_level_crossing` is -0.13 ---->
+
+2. Make some hypotheses about three additional variables that could be positively and
+negatively correlated with `duration_mean` and `num_rentals`. Test your hypotheses
+using the plotting and summary methods we've learned so far or by Googling for others.    
+    * *Self-check*: how do we generate a list of the variable names in the data set?
 
 ### Aggregation and summarization with *dplyr*
 
-In any analysis we use aggregation techniques to summarize and compress data.
-We can also use aggregation to create new variables, and that's something you'll
-need to do in your first project. We got a preview of *dplyr* in the violin 
-plot, but we were really just scratching the surface of it's capabilities.
+Virtually any analysis will require aggregation techniques to summarize and 
+compress data. Aggregation can also be used to create new variables to explore. 
+The package *dplyr* is tied for my personal favorite package in R (with *ggplot2*)
+and it is an extremely powerful and elegant way to aggregate, manipulate, tranform,
+and generally do awesome stuff with data. We saw a preview of *dplyr* in the 
+violin plot, but that was really just scratching the surface of it's capabilities.
 
-Here's all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
+*dplyr* is a fast, consistent tool for working with data frame like objects, 
+and allows you to 'chain' together SQL-like verbs to quickly and easily manipulate
+data.
+
+Here's a list of all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
 
 * `filter()` and `slice()`
 * `arrange()`
@@ -737,15 +719,12 @@ Here's all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignet
 * `summarise()`
 * `sample_n()` and `sample_frac()`
 
-These verbs are linked together either by nesting, or by using 'pipes.' The 
+The verbs are chained together either by nesting, or by using 'pipes.' The 
 *dplyr* pipe (originally from a package called [*magrittr*](http://seananderson.ca/2014/09/13/dplyr-intro.html)),
 allows you to string operations together without saving the intermediate outputs.
 It is an extremely powerful method of aggregating and summarizing data.
 
-Ultimately, we want to predict the success of a station, how should we represent
-'success?' Could try number of rentals per day.
-
-```{r, warning = FALSE}
+```{r EDA dplyr + ggplot2, include = FALSE, eval = FALSE}
 # almost!
 custs_per_day = usage %>% group_by(as.Date(time_start)) %>% summarize(no_rentals = n())
 head(custs_per_day)
@@ -804,13 +783,11 @@ ggplot(na.omit(filter(mean_custs_per_day, mean_rentals > 80)),
 Clearly some stations are more successful than others. It's your job in project 
 1 to determine if station success can be predicted by these data.
 
-#### Self-check
+### Assignment 3
 
 1. Use combinations of the *dplyr* verbs to familiarize yourself with the data.
 Are you able to identify any interesting patterns?
-2. Make plots of your data explorations with *ggplot2*.
-3. We'll learn how to merge data sets next week, but if you're feeling up to it
-check out the `merge` function. What are the *keys* that link the three data sets
-together?
+
+2. Need more specific questions.
 
 ** Save your code! **
