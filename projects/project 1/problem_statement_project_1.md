@@ -45,7 +45,7 @@ Sections you'll probably want to include in your report are an introduction to t
 * What outcome are you modeling?
   * Number of rentals?
   * Ride duration?
-* What will is output?
+* What is the output?
   * *e.g.* Will you provide a list of top 5 predictors?
   * A figure?
 * What other data sources could you pull into this dataset to improve your solution? Here's some links for inspiration:
