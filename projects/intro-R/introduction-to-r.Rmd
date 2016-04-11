@@ -683,7 +683,7 @@ Here's a list of all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dp
 * `summarise()`
 * `sample_n()` and `sample_frac()`
 
-## Using pipes %>% in your code
+## Using `%>%` pipes in your code
 
 The verbs are chained together either by nesting, or by using 'pipes.' The 
 *dplyr* pipe (originally from a package called [*magrittr*](http://seananderson.ca/2014/09/13/dplyr-intro.html)),
@@ -694,12 +694,12 @@ Whenever you see a `%>%` in R code, you can just read it out loud as "then".
 
 ### `filter` example
 
-The verb `filter` allows us to select one or more rows from a dataset, usually by the value of a certain variable (columns).  Consider the diamonds dataset again, suppose we only wanted to look at diamonds that cost more than $10000. We could enter the following code:
+The verb `filter` allows us to select one or more rows from a dataset, usually by the value of a certain variable (columns).  Consider the diamonds dataset again, suppose we only wanted to look at diamonds that cost more than $10,000. We could enter the following code:
 
 ```{r filter, eval = F}
 diamonds %>% filter(price > 10000)
 ```
-You can read this code aloud as "Take the diamonds dataset *then* filter rows where price > 10000". Instead of just printing this to your screen, you could also save this as a new dataset.
+You can read this code aloud as "Take the diamonds dataset *then* filter rows where price > $10,000." Instead of just printing this to your screen, you could also save this as a new dataset.
 
 ```{r filter2, eval = F}
 expensive_diamonds = diamonds %>% filter(price > 10000)
@@ -722,17 +722,17 @@ diamonds %>% select(cut, carat)
 
 ### Combining `select` and `filter`
 
-Let's create a new dataset called expensive_diamonds where price > 10000 and it only contains the following variables: cut and carat.
+Let's create a new dataset called expensive_diamonds where price > $10,000 and it only contains the following variables: cut and carat.
 
 ```{r select and filter, eval = F}
 expensive_diamonds = diamonds %>% filter(price > 10000) %>% select(cut, carat)
 ```
 
-"Take the diamonds dataset *then* select rows where price is greater than 10000 *then* select the cut and carat variables". Note: you will get a different result if switch the order of `filter` and `select` in this example. Why?
+"Take the diamonds dataset *then* select rows where price is greater than $10,000 *then* select the cut and carat variables." Note: you will get a different result if switch the order of `filter` and `select` in this example. Why?
 
 ## Using `summarize`
 
-`summarize` is an important verb that reduces the data to a single row, usually by performing summary statistics.
+`summarize` is an important verb that reduces the data, usually by aggregating multiple observations to single summary statistics.
 
 Let's calculate the mean carat in the diamonds dataset. This is how it is traditionally done in R:
 
@@ -879,7 +879,7 @@ are right-skewed (*i.e.* long tail going towards the right). Finally, the top
 right corner shows the correlation of each comparison. For example the correlation
 between the number of rentals and number of nearby bars is 0.22.
 
-### Assignment 1
+### Assignment 1 - Exploring data with visualization
 
 1. We hypothesize that `tourism_artwork` and `railway_level_crossing` are correlated with `duration_mean` and `num_rentals`. Test that hypothesis by using *ggpairs*. What are the correlations?
 
@@ -897,7 +897,7 @@ using the plotting and summary methods we've learned so far or by Googling for o
     
 ** Save your code! **
 
-## Assignment 2 - Asking exploratory questions and summarizing the data
+### Assignment 2 - Asking exploratory questions and summarizing the data
 
 Now let's do some exploratory statistical analysis. Try to use the *dplyr* verbs.
 
@@ -905,7 +905,7 @@ Now let's do some exploratory statistical analysis. Try to use the *dplyr* verbs
 
 2. How many rows are there where there are greater than 3000 total rentals (`num_rentals`)? What percentage is this of the total rows in the full data? (Hint: You can see how many rows and columns are in a dataset using `dim`. RStudio also shows you in the Environment tab in the upper right).
 
-3. What is the average (mean) `duration_mean` for rows where the total number of rentals is greater than 3000?
+3. What is the average (mean) `duration_mean` for rows where the total number of rentals is greater than 3,000?
     * Is this number different than what you calculated in question 1?   
     * Did you expect the average duration to increase, decrease or stay the same when there are more total rentals at a station?
   
