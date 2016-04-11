@@ -656,7 +656,148 @@ visualizations that answer the following:
 2. Is that relationship modified by the number of cylinders?
 3. What is the relationship between horsepower and MPG, and is that relationship 
 modified by the number of cylinders?
-    
+
+
+# Aggregation and summarization with *dplyr*
+ 
+## What is *dplyr*
+
+Virtually any analysis will require aggregation techniques to summarize and 
+compress data. Aggregation can also be used to create new variables to explore. 
+The package *dplyr* is tied for my personal favorite package in R (with *ggplot2*)
+and it is an extremely powerful and elegant way to aggregate, manipulate, tranform,
+and generally do awesome stuff with data. We saw a preview of *dplyr* in the 
+violin plot, but that was really just scratching the surface of it's capabilities.
+
+*dplyr* is a fast, consistent tool for working with data frame like objects, 
+and allows you to 'chain' together SQL-like verbs to quickly and easily manipulate
+data.
+
+Here's a list of all the [*dplyr* verbs](http://cran.rstudio.com/web/packages/dplyr/vignettes/introduction.html):
+
+* `filter()` and `slice()`
+* `arrange()`
+* `select()` and `rename()`
+* `distinct()`
+* `mutate()` and `transmute()`
+* `summarise()`
+* `sample_n()` and `sample_frac()`
+
+## Using pipes %>% in your code
+
+The verbs are chained together either by nesting, or by using 'pipes.' The 
+*dplyr* pipe (originally from a package called [*magrittr*](http://seananderson.ca/2014/09/13/dplyr-intro.html)),
+allows you to string operations together without saving the intermediate outputs.
+It is an extremely powerful method of aggregating and summarizing data that helps makes code more readable.
+
+Whenever you see a `%>%` in R code, you can just read it out loud as "then".
+
+### `filter` example
+
+The verb `filter` allows us to select one or more rows from a dataset, usually by the value of a certain variable (columns).  Consider the diamonds dataset again, suppose we only wanted to look at diamonds that cost more than $10000. We could enter the following code:
+
+```{r filter, eval = F}
+diamonds %>% filter(price > 10000)
+```
+You can read this code aloud as "Take the diamonds dataset *then* filter rows where price > 10000". Instead of just printing this to your screen, you could also save this as a new dataset.
+
+```{r filter2, eval = F}
+expensive_diamonds = diamonds %>% filter(price > 10000)
+```
+
+### `select` example
+
+The verb `select` allows us to select one or more columns from a dataset. Columns will generally correspond to variables in our data. You might use this if you are working with a dataset with a lot of variables and you want to limit what you are working on.
+
+```{r select, eval = F}
+diamonds %>% select(cut)
+```
+
+You can read this code aloud as "Take the diamonds dataset *then* select the cut variable". We can also select multiple columns:
+
+```{r select2, eval = F}
+diamonds %>% select(cut, carat)
+```
+"Take the diamonds dataset *then* select the carat and cut variables."
+
+### Combining `select` and `filter`
+
+Let's create a new dataset called expensive_diamonds where price > 10000 and it only contains the following variables: cut and carat.
+
+```{r select and filter, eval = F}
+expensive_diamonds = diamonds %>% filter(price > 10000) %>% select(cut, carat)
+```
+
+"Take the diamonds dataset *then* select rows where price is greater than 10000 *then* select the cut and carat variables". Note: you will get a different result if switch the order of `filter` and `select` in this example. Why?
+
+## Using `summarize`
+
+`summarize` is an important verb that reduces the data to a single row, usually by performing summary statistics.
+
+Let's calculate the mean carat in the diamonds dataset. This is how it is traditionally done in R:
+
+```{r nesting instead of summarize, eval = F}
+mean(diamonds$carat)
+```
+
+This can be done in with `summarize` with the following code:
+```{r summarize1, eval = F}
+diamonds %>% summarize(mean(carat))
+```
+
+"Take the diamonds dataset *then* summarize by taking the mean of carat." Compared to the traditional approach, the output looks slightly different. With `summarize` you can also name the result:
+```{r summarize1b, eval = F}
+diamonds %>% summarize(carat_mean = mean(carat))
+```
+
+It may not seem obvious why this approach is better than the traditional approach. One reason is that `summarize` allows you to do multiple summary statistics at once, here we will calculate mean carat and mean price together (as an added bonus we can also save it as a new dataset):
+
+```{r summarize2, eval = F}
+diamonds %>% 
+  summarize(
+    carat_mean = mean(carat),
+    mean_price = mean(price)
+    )
+
+summary_diamond_data = diamonds %>% 
+  summarize(
+    carat_mean = mean(carat),
+    price_mean = mean(price)
+    )
+```
+
+## `group_by`
+
+The `group_by` verb in *dplyr* let's you breakdown a dataset into a specified group of rows. We used this earlier in a *ggplot2* example:
+
+```{r group_by1}
+carat_summary = 
+  diamonds %>% 
+    group_by(cut) %>% 
+    summarize(carat_mean = mean(carat))
+```
+
+Let's break it down first: we are creating a new dataset called carat_summary where we take diamonds *then* we group by the variable cuts *then* we summarize by taking the mean of carat (calling that carat_mean). By grouping by cuts, we are calculating the mean for every value of cut. What are those values?
+
+```{r cut levels}
+unique(diamonds$cut)
+```
+
+So we were able to calculate the mean carat value for each type of cut. For a diamond, which type of cut has the highest average carat value?
+
+Revisit the annotation example above: why was it useful to utilize `group_by` in that example? Note: the `round` function was applied so only two digits would be displayed on the plot.
+
+## Self-check
+Return to the `mtcars` data set we used previously. Get used to coding with the *dplyr* verbs by completing the following tasks: 
+
+1. Select only the `mpg` column from `mtcar`.
+
+2. Select rows from `mtcar` where `hp` > 110.
+
+3. What is the the mean `mpg`?
+
+4. The `vs` variable takes two values: 0 and 1. Calculate the mean of `mpg` when `vs` = 0 and when `vs` = 1. Hint: use `group_by` and your answer to 3.
+
 # Exploratory data analysis
 
 ## Capital Bikeshare data
@@ -755,3 +896,20 @@ using the plotting and summary methods we've learned so far or by Googling for o
     * *Self-check*: how do we generate a list of the variable names in the data set?
     
 ** Save your code! **
+
+## Assignment 2 - Asking exploratory questions and summarizing the data
+
+Now let's do some exploratory statistical analysis. Try to use the *dplyr* verbs.
+
+1. Overall, what is the average (mean) `duration_mean` and `num_rentals` in the data?
+
+2. How many rows are there where there are greater than 3000 total rentals (`num_rentals`)? What percentage is this of the total rows in the full data? (Hint: You can see how many rows and columns are in a dataset using `dim`. RStudio also shows you in the Environment tab in the upper right).
+
+3. What is the average (mean) `duration_mean` for rows where the total number of rentals is greater than 3000?
+    * Is this number different than what you calculated in question 1?   
+    * Did you expect the average duration to increase, decrease or stay the same when there are more total rentals at a station?
+  
+4. Which `season` has the highest average (mean) `duration_mean`? `num_rentals`? (Hint: use `group_by`)
+
+** Save your code! **
+
