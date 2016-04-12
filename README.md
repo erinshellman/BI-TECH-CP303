@@ -3,7 +3,7 @@ BI TECH CP303 - Data Mining
 
 * **Instructor:** Erin Shellman, <shellman@uw.edu>  
 * **Teaching Assistant:** Bryan Mayer, <mayerbry@uw.edu>
-* **Course Location:** Puget Sound Plaza in room 407 ([map](http://www.pce.uw.edu/maps.aspx?id=88&terms))
+* **Course Location:** Puget Sound Plaza in room 406 ([map](http://www.pce.uw.edu/maps.aspx?id=88&terms))
 * **Course Time:** Mondays 6:00 - 9:00 PM
 * **Dates:** April 4, 2016 through June 13, 2016
 
