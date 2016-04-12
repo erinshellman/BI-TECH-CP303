@@ -53,7 +53,7 @@ The lecture notes are available [here](http://erinshellman.github.io/data-mining
 
 Week | Date | Topic | Dataset
 -------------- | ------------ | ------------- | -------------
-1 | April 4 | Introduction to data mining and programming with R | Capital Bikeshare: [*usage_2012.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/usage_2012.tsv), [*stations.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/stations.tsv), [*daily_weather.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/daily_weather.tsv)
+1 | April 4 | Introduction to data mining and programming with R | Capital Bikeshare: [*bikeshare_2015.tsv*](https://raw.githubusercontent.com/erinshellman/BI-TECH-CP303/master/projects/project%201/data/bikeshare_2015.tsv)
 2 | April 11 | Linear regression | Capital BikeShare 
 3 | April 18 | Linear regression extensions | Capital BikeShare 
 4 | April 25 | Flex-time, Logistic regression | Twitter user data: [*bot_or_not.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+2/bot_or_not.tsv)
