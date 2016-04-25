@@ -1,14 +1,14 @@
 ---
 title: "Linear regression in R"
-date: "April 24, 2016"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
+date: "April 24, 2016"
 ---
 
 ```{r setup, include = FALSE}
@@ -118,7 +118,7 @@ ggplot(bikeshare, aes(x = season, y = num_rentals)) +
   theme_minimal()
 ```
 
-You might have noticed that one of the seasons is missing. By default R choses a 
+You might have noticed that one of the seasons is missing. By default R chooses a 
 reference group that is represented in the intercept term. In this case `Autumn` 
 is the reference group for the `season` variable because
 by default R orders factors alphabetically. If you want to order the 
@@ -132,7 +132,7 @@ model = lm(num_rentals ~ crossing + season, data = bikeshare)
 summary(model)
 ```
 
-The interpretation of the new model is that stations without crosswalks or parking have an average of 2,687 rentals in the spring. Those same stations can expect an additionanl 232 rentals in the summer, and about 906 less in the fall and 2,116 less in the winter.
+The interpretation of the new model is that stations without crosswalks or parking have an average of 2,687 rentals in the spring. Those same stations can expect an additional 232 rentals in the summer, and about 906 less in the fall and 2,116 less in the winter.
 
 # The *caret* package
 
@@ -158,7 +158,7 @@ set.seed(1234) # set a seed
 ```
 
 Setting a seed in R insures that you get identical results each time you run
-your code. Since resampling methods are inherently probabilistic, every time we 
+your code. Since re-sampling methods are inherently probabilistic, every time we 
 rerun them we'll get slightly different answers. Setting the seed to the same 
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
@@ -237,7 +237,7 @@ about 2,863 which means that on average the predictions are off by about 2,863
 rentals. 
 
 What happens if we build a model with all the variables in it? To do that,
-I'm uisng the `select` verb from `dplyr` to remove variables that aren't 
+I'm using the `select` verb from `dplyr` to remove variables that aren't 
 predictors, like the station name, id, and lat/long.
 
 ```{r full-model}
@@ -314,7 +314,7 @@ increase in $y$ associated with a 1 standard deviation increase in $x$.
 ## Variable combination
 
 A simple method to reduce model complexity is to combine some of the variables. 
-For example the dataset contains a variable for *nightclub*, *pub* and *bar*, 
+For example the data set contains a variable for *nightclub*, *pub* and *bar*, 
 likewise there's a variable for 
 *cafe*, *restaurant* and *fast_food*. Maybe we can retain information
 and remove some variables.
@@ -341,7 +341,7 @@ to_model =
 Try out your own categories, these are just a few to get you started.
 We'll learn how to make categories computationally when we cover clustering.
 
-We've change the dataframe, don't forget to redefine the train and test sets!
+We've change the data frame, don't forget to redefine the train and test sets!
 ```{r, warning = FALSE}
 train = to_model[in_train, ]
 test = to_model[-in_train, ]
