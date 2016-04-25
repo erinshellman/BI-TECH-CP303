@@ -1,15 +1,14 @@
 ---
 title: "Linear regression in R"
-author: "Erin Shellman"
-date: "April 13 - 27, 2015"
+date: "April 24, 2016"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
@@ -18,134 +17,49 @@ require(dplyr)
 require(ggplot2)
 require(GGally)
 require(scales)
-require(lubridate)
 require(caret)
 
 setwd('~/projects/BI-TECH-CP303/projects/project 1')
-usage = read.delim('./data/usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-stations = read.delim('./data/stations.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-weather = read.delim('./data/daily_weather.tsv',
-                   sep = '\t',
-                   header = TRUE)
+bikeshare = read.delim('./data/bikeshare_2015.tsv',
+                       sep = '\t',
+                       header = TRUE)
 ```
 
-## Linear regression 
+# Linear regression 
 
 In this tutorial we'll learn:
 
-* how to `merge` datasets
-* how to fit linear regression models
-* how to split data into test and train sets
-* how to tune our models and select features
+1. how to fit linear regression models
+2. how to split data into test and train sets
+3. how to tune our models and select features
 
-### Data preparation
+## Data preparation
 
-We're working with the Capital Bikeshare again this week, so start by reading in
-*usage*, *weather*, *stations*.
-```{r, eval = FALSE}
+As always when you open R, start by reloading the packages you expect to use.
+In the code below, we're loading the `dplyr` and `ggplot2` libraries.
+We're working with the Capital Bikeshare again, so start by reading in
+the data file.
+
+```{r load-data, eval = FALSE}
 library(dplyr)
 library(ggplot2)
-library(lubridate)
 
-usage = read.delim('usage_2012.tsv',
-                   sep = '\t',
-                   header = TRUE)
+# you might want to set the working directory first.
+setwd('/path/to/your/data')
 
-weather = read.delim('daily_weather.tsv',
-                   sep = '\t',
-                   header = TRUE)
-
-stations = read.delim('stations.tsv',
+bikeshare = read.delim('bikeshare_2015.tsv',
                    sep = '\t',
                    header = TRUE)
 ```
 
-### Merging data
-
-We have three related datasets to work with, but we can't really get started 
-until they're combined. Let's start with *usage* and *weather*.
-The *usage* dataframe is at the resolution of the hour, while the *weather* data
-are at the resolution of a day, so we know we're going to have to either 
-duplicate or compress data to merge. I vote compress, let's summarize! 
-```{r}
-head(usage)
-custs_per_day = 
-  usage %>% 
-    group_by(time_start = as.Date(time_start), station_start, cust_type) %>% 
-    summarize(no_rentals = n(),
-              duration_mins = mean(duration_mins, na.rm = TRUE))
-
-head(custs_per_day)
-```
-
-Perfection, now we can merge!  What's the key?
-```{r}
-# make sure we have consistent date formats
-custs_per_day$time_start = ymd(custs_per_day$time_start)
-weather$date = ymd(weather$date)
-
-# then merge. see ?merge for more details about the function
-weather_rentals = merge(custs_per_day, weather, 
-                        by.x = 'time_start', by.y = 'date')
-
-# check dimensions after to make sure they are what you expect
-dim(custs_per_day)
-dim(weather)
-dim(weather_rentals)
-
-head(weather_rentals)
-```
-
-Great, now we want to merge on the last dataset, *stations*. What is the key to 
-link *weather_rentals* with *stations*?
-```{r}
-final_data = merge(weather_rentals, stations, 
-                   by.x = 'station_start', by.y = 'station')
-dim(final_data)
-dim(weather_rentals)
-
-head(final_data[, 1:30])
-
-# probably want to save this now!
-write.table(final_data, 
-            'bikeshare_modeling_data.tsv', 
-            row.names = FALSE, sep = '\t')
-
-# rename to something more convenient and remove from memory
-data = final_data
-rm(final_data)
-```
-
-### The `lm()` function
+## The `lm()` function
 
 The function for creating a linear model in R is `lm()` and the primary 
-arguments are *formula* and *data*. Formulas in R are a little funny,
-instead of an = sign, they are expressed with a ~. Let's fit the model we saw in
-the lecture notes: $rentals = \beta_0 + \beta_1*crossing$. There's a little snag 
-we have to take care of first. Right now we've got repeated measures *i.e.* 
-one measurement per day, so we need to aggregate again this time over date.
-```{r}
-rentals_crossing = 
-  data %>% 
-    group_by(station_start) %>% 
-    summarize(mean_rentals = mean(no_rentals),
-              crossing = mean(crossing))
+arguments are *formula* and *data*. Formulas in R are expressed with a tilde, 
+*e.g*`y ~ x`. Let's fit the model: $rentals = \beta_0 + \beta_1*crossing$.
 
-head(rentals_crossing)
-
-# plot it
-ggplot(rentals_crossing, aes(x = crossing, y = mean_rentals)) +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 4, alpha = 0.60) +
-  theme_minimal()
-
-model = lm(mean_rentals ~ crossing, data = rentals_crossing)
+```{r lm, fig.height = 7, fig.width = 5, fig.align = 'center'}
+model = lm(num_rentals ~ crossing, data = bikeshare)
 
 # view what is returned in the lm object
 attributes(model)
@@ -153,9 +67,12 @@ attributes(model)
 # get model output
 summary(model)
 
-# print model diagnostics
-par(mfrow = c(2, 2))
-plot(model)
+# plot it
+ggplot(bikeshare, aes(x = crossing, y = num_rentals)) +
+  geom_smooth(method = 'lm') +
+  geom_point(size = 3, alpha = 0.60) +
+  facet_grid(season ~. ) + 
+  theme_minimal()
 ```
 
 The `attributes()` function can be called on just about any object in R and it
@@ -164,104 +81,69 @@ objects and see what values are contained inside that could be used in other
 analysis. For example, extracting the residuals via `model$residuals` is useful
 if we want to print diagnostic plots like those above.
 
-When we run `summary()` on the `lm` object, we see the results. The *Call*
-section just prints back the model specification, and the *Residuals* section
-contains a summary of the distribution of the errors. The fun stuff is in the
-*Coefficients* section. In the first row contains the covariate names followed 
-by their estimates, standard errors, t- and p-values. Our model ends up being 
-`rentals = 15 + 0.24(crosswalks)` which means that the average number of rentals
-when there are no crosswalks is 15, and the average increases by 1 rental for
-every four additional crosswalks.
+Run `summary()` on the `lm` object to see detailed results. The *Call*
+section prints the model specification, and the *Residuals* section
+contains a summary of the distribution of the errors. *Coefficients* section contains the estimated coefficients, standard errors, *t-* and *p-*values for each variable in the model. Our model ends up being `rentals = 1987 + 40*(crossings)`, which means that the average number of rentals is 1987 when there are no crosswalks, and the average increases by 40 rentals for every additional crosswalk within a quarter mile.
 
-We can fit regressions with multiple covariates the same way:
-```{r}
-# lets include windspeed this time
-rentals_multi = 
-  data %>% 
-    group_by(station_start) %>% 
-    summarize(mean_rentals = mean(no_rentals),
-              crossing = mean(crossing),
-              windspeed = mean(windspeed))
-
-head(rentals_multi)
-
-ggplot(rentals_multi, aes(x = windspeed, y = mean_rentals)) +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 4, alpha = 0.60) +
+### Multivariate regression 
+```{r, eval = FALSE, include = FALSE}
+# lets include the number of parking areas
+ggplot(bikeshare, aes(y = no_empty_docks, x = no_bikes)) +
+  geom_smooth(method = 'lm', se = FALSE, color = 'black') + 
+  geom_point(aes(color = num_rentals, size = num_rentals), alpha = 0.70) +
+  facet_grid(season ~. ) + 
+  scale_colour_gradient(limits = c(2, 28540), low = 'blue', high = 'yellow') +
+  scale_size(range = c(0, 15)) + 
   theme_minimal()
+```
 
-model = lm(mean_rentals ~ crossing + windspeed, data = rentals_multi)
+We can fit regressions with multiple covariates the same way by adding variables
+with the `+` sign. Let's fit another model that includes the number of crosswalks
+and the number of parking lots as predictors:
+
+```{r multi-lm}
+model = lm(num_rentals ~ crossing + parking, data = bikeshare)
 summary(model)
 ```
 
-The model coefficients changed quite a lot when we added in wind speed. The 
-intercept is now negative, and the wind speed coefficient is huge! When 
-interpreting coefficients, it's important to keep the scale in mind. Wind speed 
-ranges from 0.05 to 0.44 so when you multiply 1172 by 0.05 for example, you end 
-up with about 60, which is within the range we'd expect.
+Let's try one more, this time we'll include `season`, a factor variable:
 
-Let's try one more, this time we'll include a factor variable.
-```{r}
-rentals_multi = 
-  data %>% 
-    group_by(station_start, is_holiday) %>% 
-    summarize(mean_rentals = mean(no_rentals),
-              crossing = mean(crossing),
-              windspeed = mean(windspeed))
+```{r lm-factor, fig.height = 4, fig.width = 4, fig.align = 'center'}
+# lets include season this time
+model = lm(num_rentals ~ crossing + parking + season, data = bikeshare)
+summary(model)
 
-head(rentals_multi)
-
-# plot crossings, colored by is_holiday
-ggplot(rentals_multi, 
-       aes(x = crossing, y = mean_rentals, color = factor(is_holiday))) +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 4, alpha = 0.60) +
+ggplot(bikeshare, aes(x = season, y = num_rentals)) +
+  geom_boxplot() +
   theme_minimal()
+```
 
-# plot windspeed, colored by is_holiday
-ggplot(rentals_multi, 
-       aes(x = windspeed, y = mean_rentals, color = factor(is_holiday))) +
-  geom_smooth(method = 'lm', size = 2) +
-  geom_point(size = 4, alpha = 0.60) +
-  theme_minimal()
+You might have noticed that one of the seasons is missing. By default R choses a 
+reference group that is represented in the intercept term. In this case `Autumn` 
+is the reference group for the `season` variable because
+by default R orders factors alphabetically. If you want to order the 
+`season` category differently, just specify the `levels` in the `factor` function.
 
-model = lm(mean_rentals ~ crossing + windspeed + factor(is_holiday), 
-           data = rentals_multi)
+```{r factor-relevel}
+bikeshare$season = factor(bikeshare$season, 
+                          levels = c('Spring', 'Summer', 'Autumn', 'Winter'))
+
+model = lm(num_rentals ~ crossing + season, data = bikeshare)
 summary(model)
 ```
 
-The output looks a little funny now. There's a term called 
-`factor(is_holiday)1`, what does that mean? Factors are category variables and 
-their interpretation is relative to a baseline. Our factor `is_holiday` 
-only has two levels, 0 and 1, and R sets 0 to the baseline by default. So the 
-interpretation of that term is that we can expect about 10 additional rentals 
-when it is a holiday (*i.e.* `is_holiday == 0`) and the other variables are
-fixed.
+The interpretation of the new model is that stations without crosswalks or parking have an average of 2,687 rentals in the spring. Those same stations can expect an additionanl 232 rentals in the summer, and about 906 less in the fall and 2,116 less in the winter.
 
-## The *caret* package
+# The *caret* package
 
-```{r, include = FALSE}
-rm(data)
-data = read.delim('./data/final_modeling_data.tsv', sep = '\t', header = TRUE)
-data$weekday = factor(data$weekday, labels = 0:6, levels = 0:6)
-data$season_code = factor(data$season_code)
-datais_holiday = factor(data$is_holiday)
-data$weather_code = factor(data$weather_code)
-```
+Remember last time when we did exploratory data analysis (EDA) with `ggpairs`
+because it allowed us to view relationships between many variable simultaneously? 
+We're in a similar situation now because there are around 70 modeling variables 
+to choose from, so how do we start developing models? 
 
-For this section, we'll use the fully cleaned and combined data from the 
-[project-1-data-cleanup](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/project-1-data-cleanup.Rmd) 
-file, so make sure you've gone through and cleaned
-your data up like that, or download the clean file from 
-[here](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+1/capital-bike-share/final_modeling_data.tsv).
-
-```{r, eval = FALSE}
-data = read.delim('final_modeling_data.tsv', sep = '\t', header = TRUE)
-```
-
-We'll be using the *caret* package (short for **c**lassification **a**nd 
-**re**gression **t**raining) for model development because it integrates
-many modeling packages in R into one unified syntax. That means more reusable
+Lucky for us there's the `caret` package (short for **c**lassification **a**nd 
+**re**gression **t**raining). `caret` is great for model development because it 
+integrates many modeling methods in R into one unified syntax. That means more reusable
 code for us! *caret* contains helper functions that provide a unified 
 framework for data cleaning/splitting, model training, and comparison. I highly
 recommend the 
@@ -281,9 +163,9 @@ rerun them we'll get slightly different answers. Setting the seed to the same
 number insures that we get identical randomness each time the code is run, and
 that's helpful for debugging.
 
-### Train and test data
+## Train and test data
 
-Before any analysis in this class we'll need to divide our data into train and 
+Before analysis we'll divide data into train and 
 test sets. Check out 
 [this](http://topepo.github.io/caret/training.html) nice overview for more 
 details. The *training* set is typically about 75% of the data and is used for 
@@ -299,22 +181,22 @@ future on brand new data.
 Here's how to split the data with *caret*:
 ```{r}
 # select the training observations
-in_train = createDataPartition(y = data$rentals,
-                                   p = 0.75, # 75% in train, 25% in test
-                                   list = FALSE)
+in_train = createDataPartition(y = bikeshare$num_rentals,
+                               p = 0.75, # 75% in train, 25% in test
+                               list = FALSE)
 head(in_train) # row indices of observations in the training set
 
-train = data[in_train, ]
-test = data[-in_train, ]
+train = bikeshare[in_train, ]
+test = bikeshare[-in_train, ]
 
 dim(train)
 dim(test)
 ```
 
-Note: I recommend doing all data processing and aggregation steps *before* 
+**Note:** I recommend doing all data processing and aggregation steps *before* 
 splitting out your train/test sets.
 
-### Training
+## Model training
 
 Our workhorse function in the *caret* package in the `train` function. This
 function can be used to evaluate performance parameters, choose optimal models 
@@ -322,8 +204,11 @@ based on the values of those parameters, and estimate model performance. For
 regression we can use it in place of the `lm()` function. Here's our last
 regression model using the train function.
 
-```{r}
-model_fit = train(rentals ~ crossing + windspeed + factor(is_holiday), 
+Now that you're familiar with how to specify model equations with the `~` character
+you should recognize the model:
+
+```{r lm-caret}
+model_fit = train(num_rentals ~ crossing + parking + season, 
                   data = train, 
                   method = 'lm',
                   metric = 'RMSE') 
@@ -335,10 +220,10 @@ out_of_sample_predictions = predict(model_fit, newdata = test)
 
 # compare predictions against the observed values
 errors = data.frame(predicted = out_of_sample_predictions,
-                    observed = test$rentals,
-                    error = out_of_sample_predictions - test$rentals)
+                    observed = test$num_rentals,
+                    error = out_of_sample_predictions - test$num_rentals)
 
-# eh, not so good
+# plot the out-of-sample errors
 ggplot(data = errors, aes(x = predicted, y = observed)) + 
   geom_abline(aes(intercept = 0, slope = 1), 
               size = 3, alpha = 0.70, color = 'red') +
@@ -348,20 +233,47 @@ ggplot(data = errors, aes(x = predicted, y = observed)) +
 ```
 
 Our prediction accuracy is not so great for this model. The in-sample RMSE is 
-about 27 which means that on average the predictions are off by about 27 
-rentals. Let's fit the giant model we made before:
-```{r}
-full_model = train(rentals ~ ., 
-                  data = train, 
+about 2,863 which means that on average the predictions are off by about 2,863
+rentals. 
+
+What happens if we build a model with all the variables in it? To do that,
+I'm uisng the `select` verb from `dplyr` to remove variables that aren't 
+predictors, like the station name, id, and lat/long.
+
+```{r full-model}
+full_model = train(num_rentals ~ ., 
+                  data = select(train, -station, -id, -lat, -long), 
                   method = 'lm') 
+full_model
+
+# get predictions
+out_of_sample_predictions = predict(full_model, newdata = test)
+
+# compare predictions against the observed values
+errors = data.frame(predicted = out_of_sample_predictions,
+                    observed = test$num_rentals,
+                    error = out_of_sample_predictions - test$num_rentals)
+
+# plot the out-of-sample errors
+ggplot(data = errors, aes(x = predicted, y = observed)) + 
+  geom_abline(aes(intercept = 0, slope = 1), 
+              size = 3, alpha = 0.70, color = 'red') +
+  geom_point(size = 3, alpha = 0.80) +
+  ggtitle('out-of-sample errors, full model') +
+  theme_minimal()
 ```
 
-The in-sample RMSE is about 19, so definitely an improvement over the previous 
+The in-sample RMSE is about 2,281, so definitely an improvement over the previous 
 model, but this model is really complex and probably not going to be usable by
 Pronto. How can we reduce the complexity of the model, but maintain reasonable
 predictive accuracy?
 
-### Preprocessing
+# Assignment 3
+
+1. Try a couple different models based on the hypotheses you tested in the 
+first two assignments. Can you improve on the RMSE?
+
+## Preprocessing
 
 Shrinkage methods require that the predictors are normalized to be on the same 
 scale. We can accomplish this by centering and scaling the data. You center a 
@@ -374,20 +286,9 @@ The *caret* package has lots of convenient functions for
 [preprocessing data](http://topepo.github.io/caret/preprocess.html), check 'em 
 out!
 
-#### Converting factors to dummy variables
-
-We run into some trouble if we try to just center and scale the data because its
-got factor variables and you can't subtract a number from a category. We can 
-use the `model.matrix` function to fix that really quickly.
-
 ```{r, warning = FALSE}
-no_factors = as.data.frame(model.matrix(rentals ~ . -1, data = data))
-
-# put rentals back on
-no_factors$rentals = data$rentals
-
-full_model_scaled = train(rentals ~ ., 
-                  data = no_factors, 
+full_model_scaled = train(num_rentals ~ ., 
+                  data = select(train, -station, -id, -lat, -long), 
                   method = 'lm',
                   preProcess = c('center', 'scale'))
 ```
@@ -408,49 +309,33 @@ Since we divide by the standard deviation during scaling, the non-intercept
 coefficients in the centered and scaled model can be interpreted as the 
 increase in $y$ associated with a 1 standard deviation increase in $x$.
 
-## Model Selection
+# Model Selection
 
-### Variable combination
+## Variable combination
 
 A simple method to reduce model complexity is to combine some of the variables. 
-For example the dataset contains a variable for *alcohol*, *pub* and *bar*, 
-likewise there's a variable for *food_court*,
-*restaurant*, *food_cart*, and *fast_food*. Maybe we can retain information
+For example the dataset contains a variable for *nightclub*, *pub* and *bar*, 
+likewise there's a variable for 
+*cafe*, *restaurant* and *fast_food*. Maybe we can retain information
 and remove some variables.
 
 ```{r, warning = FALSE}
-no_factors$food = no_factors$fast_food + no_factors$restaurant + 
-  no_factors$food_court + no_factors$bar.restaurant + 
-  no_factors$cafe + no_factors$food_cart 
+bikeshare$food = bikeshare$fast_food + bikeshare$restaurant + bikeshare$cafe 
 
-no_factors$nightlife = no_factors$bar + no_factors$club + 
-  no_factors$pub + no_factors$nightclub 
+bikeshare$nightlife = bikeshare$bar + bikeshare$pub + bikeshare$nightclub 
 
-no_factors$seedy_stuff = no_factors$stripclub + no_factors$strip_club + 
-  no_factors$alcohol + no_factors$check_cashing + no_factors$motel + 
-  no_factors$hostel
+bikeshare$tourism = 
+  bikeshare$tourism_artwork + 
+  bikeshare$tourism_hotel + 
+  bikeshare$tourism_information + 
+  bikeshare$tourism_museum
 
-no_factors$tourism = no_factors$theatre + no_factors$arts_centre + 
-  no_factors$tourist + no_factors$school..historic. + no_factors$hotel + 
-  no_factors$gallery + no_factors$artwork + no_factors$sculpture + 
-  no_factors$museum + no_factors$tour_guide + no_factors$car_rental + 
-  no_factors$guest_house + no_factors$landmark + no_factors$attraction + 
-  no_factors$information
-
-dim(no_factors)
-
-# now remove those variables from the no_factorsset
-no_factors = 
-  no_factors %>%
-  select(-fast_food, -restaurant, -food_court, -bar.restaurant, -cafe, 
-         -food_cart, -bar, -club, -pub, -nightclub, -stripclub, -strip_club, 
-         -alcohol, -check_cashing, -motel, -hostel, -theatre, -arts_centre, 
-         -tourist, -school..historic., -hotel, -gallery, -artwork, -sculpture, 
-         -museum, -tour_guide, -car_rental, -guest_house, -landmark, 
-         -attraction, -information)
-
-# Reduced the dataset by 31 variables!
-dim(no_factors)
+# save new modeling dataset in new variable
+to_model = 
+  bikeshare %>%
+    select(-station, -id, -lat, -long, -fast_food, -restaurant, -cafe, -bar, 
+           -pub, -nightclub, -tourism_artwork, -tourism_hotel, 
+           -tourism_information, -tourism_museum)
 ```
 
 Try out your own categories, these are just a few to get you started.
@@ -458,19 +343,19 @@ We'll learn how to make categories computationally when we cover clustering.
 
 We've change the dataframe, don't forget to redefine the train and test sets!
 ```{r, warning = FALSE}
-train = no_factors[in_train, ]
-test = no_factors[-in_train, ]
+train = to_model[in_train, ]
+test = to_model[-in_train, ]
 
 dim(train)
 dim(test)
 
 # how does our new full-model compare?
-full_model = train(rentals ~ ., 
+full_model = train(num_rentals ~ ., 
                   data = train, 
                   method = 'lm') 
 ```
 
-### Subset selection
+## Subset selection
 
 We haven't talked much about computational limitations yet, but it's a good 
 time to start. Selection methods can be *extremely* slow. Why? Because we have 
@@ -480,25 +365,9 @@ up to you, but to make sure these models can run in less than infinite time,
 I'm going to remove a bunch of predictors so you get the idea.
 
 ```{r, warning = FALSE}
-train = 
-  train %>% 
-    select(rentals, cust_typeCasual, cust_typeRegistered, cust_typeSubscriber, 
-           weekday1, weekday2, weekday3, weekday4, weekday5, weekday6, 
-           season_code2, season_code3, season_code4, is_holiday, weather_code2, 
-           weather_code3, humidity, windspeed, temp, duration, food, nightlife, 
-           seedy_stuff, tourism) 
-
-test = 
-  test %>% 
-    select(rentals, cust_typeCasual, cust_typeRegistered, cust_typeSubscriber, 
-           weekday1, weekday2, weekday3, weekday4, weekday5, weekday6, 
-           season_code2, season_code3, season_code4, is_holiday, weather_code2, 
-           weather_code3, humidity, windspeed, temp, duration, food, nightlife, 
-           seedy_stuff, tourism)
-
 # forward selection
-forward_model = train(rentals ~ ., 
-                      data = na.omit(train),  
+forward_model = train(num_rentals ~ ., 
+                      data = train,  
                       method = 'leapForward',
                       preProcess = c('center', 'scale'),
                       # try models of size 1 - 23
@@ -524,8 +393,8 @@ plot(varImp(forward_model))
 plot(forward_model$finalModel, scale = 'adjr2')
 
 # backward_selection
-backward_model = train(rentals ~ ., 
-                       data = na.omit(train),  
+backward_model = train(num_rentals ~ ., 
+                       data = train,  
                        method = 'leapBackward',
                        preProcess = c('center', 'scale'),
                        tuneGrid = expand.grid(nvmax = 1:23),
@@ -536,8 +405,8 @@ plot(backward_model$finalModel, scale = 'adjr2')
 plot(varImp(backward_model, scale = TRUE))
 
 # steps in both directions
-hybrid_model = train(rentals ~ ., 
-                     data = na.omit(train),  
+hybrid_model = train(num_rentals ~ ., 
+                     data = train,  
                      method = 'leapSeq',
                      preProcess = c('center', 'scale'),
                      tuneGrid = expand.grid(nvmax = 1:23),
@@ -548,13 +417,13 @@ plot(hybrid_model$finalModel, scale = 'adjr2')
 plot(varImp(hybrid_model))
 ```
 
-### Shrinkage
+## Shrinkage
 
-#### Ridge regression 
+### Ridge regression 
 
 ```{r}
 # ridge regression
-ridge_model = train(rentals ~ ., 
+ridge_model = train(num_rentals ~ ., 
                     data = train, 
                     method = 'ridge',
                     preProcess = c('center', 'scale'),
@@ -572,7 +441,7 @@ plot(varImp(ridge_model))
 ridge_coefs = predict(ridge_model$finalModel, type = 'coef', mode = 'norm')$coefficients
 
 # ridge regression with variable selection
-ridge_model2 = train(rentals ~ ., 
+ridge_model2 = train(num_rentals ~ ., 
                      data = train, 
                      method = 'foba',
                      preProcess = c('center', 'scale'),
@@ -589,10 +458,11 @@ disposal for decreasing our model size. See
 [this page](http://topepo.github.io/caret/Feature_Selection_Wrapper.html) for
 a list of other available options to try out if you like.
 
-#### Lasso 
+### Lasso 
+
 ```{r}
-lasso_model = train(rentals ~ ., 
-                    data = na.omit(train),
+lasso_model = train(num_rentals ~ ., 
+                    data = train,
                     method = 'lasso',
                     preProc = c('scale', 'center'),
                     tuneLength = 10,
@@ -607,7 +477,7 @@ plot(lasso_model$finalModel)
 lasso_coefs = predict(lasso_model$finalModel, type = 'coef', mode = 'norm')$coefficients
 ```
 
-## Measuring predictive accuracy
+# Measuring predictive accuracy
 
 All right, now we've got a nice collection of models. Which one should we 
 report?
@@ -636,15 +506,7 @@ sqrt(mean((backward_predictions - test$rentals)^2 , na.rm = TRUE))
 
 lasso_predictions = predict(lasso_model, test)
 sqrt(mean((lasso_predictions - test$rentals)^2 , na.rm = TRUE))
-
 ```
 
-## Project tips
+# Assignment 4
 
-Check out this list of different model selection methods and try a couple out.
-
-  * How do they work?
-  * Which works best?
-  
-Once you've spent some time exploring candidate models, pick one and use it in
-your report.
