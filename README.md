@@ -27,12 +27,12 @@ When you turn in your project reports, you will receive the reports of three of 
 
 | Assignment |   Date   |
 |-----------|----------|
-| [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | May 2 | 
-| Project 1 Critiques | May 9 | 
-| [Project 2](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%202/problem_statement_project_2.md) | May 16  | 
-| Project 2 Critiques | May 23 | 
+| [Project 1](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%201/problem_statement_project_1.md) | May 9 | 
+| Project 1 Critiques | May 16 | 
+| [Project 2](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/project%202/problem_statement_project_2.md) | May 23  | 
+| Project 2 Critiques | May 30 | 
 | No class! | May 30 | 
-| Project 3 | June 6   | 
+| Project 3 | June 13   | 
 | Last class! | June 13 | 
 
 ## Textbook
