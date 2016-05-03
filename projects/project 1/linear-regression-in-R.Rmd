@@ -1,13 +1,13 @@
 ---
 title: "Linear regression in R"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 date: "April 24, 2016"
 ---
 
@@ -297,12 +297,12 @@ Coefficients estimated with normalized data have a different interpretation than
 coefficients from un-normalized data. In this case when the data are scaled the 
 intercept has a better interpretation, it's the expected number of rentals when 
 all the predictors are at their average value. So, in this case, when all the 
-predictors are at their average values, we expect about 21 rentals per day. 
-In the previous full-model we had an intercept of about -28, which could be 
+predictors are at their average values, we expect about 2813 rentals per season. 
+In the previous full-model we had an intercept of about -878.261, which could be 
 interpreted as the expected number of rentals when all the other predictors 
 have a value of 0. That's pretty unsatisfying for a couple reasons. First, we 
 can't have negative rentals! Second, for a lot of the predictors it doesn't make 
-sense to plug in 0's. What does it mean to have a duration of 0? Or a temp of 0?
+sense to plug in 0's. What does it mean to have a duration of 0? 
 Centering and scaling fix the non-interpret ability of the previous models.
 
 Since we divide by the standard deviation during scaling, the non-intercept 
@@ -343,8 +343,11 @@ We'll learn how to make categories computationally when we cover clustering.
 
 We've change the data frame, don't forget to redefine the train and test sets!
 ```{r, warning = FALSE}
-train = to_model[in_train, ]
-test = to_model[-in_train, ]
+train = bikeshare[in_train, ]
+test = bikeshare[-in_train, ]
+
+train = select(train, -station, -id, -lat, -long)
+test = select(test, -station, -id, -lat, -long)
 
 dim(train)
 dim(test)
