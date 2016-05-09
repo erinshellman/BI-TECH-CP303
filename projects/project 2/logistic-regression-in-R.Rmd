@@ -1,7 +1,5 @@
 ---
 title: "Logistic regression in R"
-author: "Erin Shellman"
-date: "May 04, 2015"
 output:
   pdf_document:
     toc: yes
@@ -10,131 +8,203 @@ output:
     theme: readable
     toc: yes
     toc_depth: 3
+date: "May 09, 2016"
 ---
 
 ```{r setup, include = FALSE}
 # my set-up
-knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
 require(dplyr)
 require(ggplot2)
 require(GGally)
-require(scales)
-require(lubridate)
 require(caret)
+
 setwd('~/projects/BI-TECH-CP303/projects/project 2')
-data = read.delim('./data/bot_or_not.tsv',
-                   sep = '\t',
-                   header = TRUE)
+twitter = read.delim('./data/bot_or_not.tsv',
+                     sep = '\t',
+                     header = TRUE)
 ```
 
-For the second project we'll explore user data from Twitter. The data set has a
-variable called `bot` that denotes whether the user is a bot, and then some 
-features about the user account.
+# Introduction 
 
-```{r, eval = FALSE}
+For the second project we'll explore user data from Twitter to identify accounts 
+likely belonging to bots. The data set has variables about profile configuration
+(`default_profile`, `default_profile_image`), connectivity (`friends_count`, 
+`followers_count`), and some information about the nature of their tweets 
+(`diversity`, `mean_mins_between_tweets`). Additionally, there's an outcome 
+variable called `bot` that denotes whether the account belongs to a bot 
+(`bot == 1`) or to a human (`bot == 0`).
+
+```{r read-data, eval = FALSE}
 library(dplyr)
 library(ggplot2)
-library(lubridate)
 library(GGally)
-library(scales)
 library(caret)
 
-data = read.delim('bot_or_not.tsv',
-                   sep = '\t',
-                   header = TRUE)
+twitter = read.delim('bot_or_not.tsv',
+                     sep = '\t',
+                     header = TRUE)
 ```
 
-## Exploratory data analysis
+# Exploratory data analysis
 
-We've got a brand new dataset here, so let's familiarize ourselves by
-conducting an exploratory data analysis. First, let's make sure the variables 
-are of the right types, *i.e.* continuous variables are continuous and dummy 
-variables are factors.
+We've got a brand new data set, so let's familiarize ourselves by
+conducting an exploratory data analysis. Let's start by summarizing the whole
+data set to see what the variable values are.
 
 ```{r}
-# tell R which variables are categorical (factors)
-data$bot = factor(data$bot)
-data$default_profile = factor(data$default_profile)
-data$default_profile_image = factor(data$default_profile_image)
-data$geo_enabled = factor(data$geo_enabled)
-data$profile_background_tile = factor(data$profile_background_tile)
-data$verified = factor(data$verified)
+summary(twitter)
 ```
 
-Now, we can explore the data a bit.
-```{r, warning = FALSE, message = FALSE}
-summary(data)
+From the summary, we can see that there are a couple `factor` variables in the 
+data set, `bot`, `default_profile`, `default_profile_image` and `geo_enabled`.
+Before exploring further, let's first tell R that those columns represent
+categorical variables.
 
-# inspect the trends
-ggpairs(data[ , c('followers_count', 'friends_count', 'account_age', 
-                  'days_since_last_tweet', 'listed_count', 
-                  'status_favorite_count', 'bot')],
-        lower = list(continuous = 'points', params = list(alpha = 0.70)),
-        diag = list(continuous = 'density', params = list(alpha = 0.70)), 
-        upper = list(continuous = 'cor'),
-        axisLabels = 'show', color = 'bot')
+```{r}
+twitter$bot = factor(twitter$bot)
+twitter$default_profile = factor(twitter$default_profile)
+twitter$default_profile_image = factor(twitter$default_profile_image)
+twitter$geo_enabled = factor(twitter$geo_enabled)
 
-ggplot(data, aes(x = followers_count, fill = factor(bot))) +
-  geom_histogram(alpha = 0.60)
+summary(twitter)
+```
 
-# whoa, some people have a lot of followers, but most don't. we need to lob off
+Like before, we can evaluate many relationships simultaneously with `ggpairs.`
+
+```{r ggpairs, fig.align = 'center', fig.width = 10, fig.height = 10}
+# inspect many trends with ggpairs
+ggpairs(twitter[ , c('followers_count', 'friends_count', 'account_age_hours', 
+                  'diversity', 'statuses_count', 'bot')])
+```
+
+Once we have some initial hypotheses we can make more specific plots.
+```{r eda}
+ggplot(twitter, aes(x = followers_count, fill = bot)) +
+  geom_histogram()
+
+# Some people have a lot of followers, but most don't. we need to lob off
 # the long tail so we can see the distribution better
-ggplot(filter(data, followers_count < 100), 
-       aes(x = followers_count, fill = factor(bot))) +
-  geom_histogram(alpha = 0.60)
+ggplot(filter(twitter, followers_count < 100), 
+       aes(x = followers_count, fill = bot)) +
+  geom_histogram()
+
+ggplot(filter(twitter, followers_count < 100), 
+       aes(x = followers_count, fill = bot)) +
+  geom_histogram() + 
+  facet_grid(bot ~.)
 
 # how about the number of people they follow?
-ggplot(data, aes(x = friends_count, fill = factor(bot))) +
-  geom_histogram(alpha = 0.60)
+ggplot(twitter, aes(x = friends_count, fill = bot)) +
+  geom_histogram() +
+  facet_grid(bot ~.)
 
 # it's a little hard to see
-ggplot(filter(data, friends_count < 100), 
-       aes(x = friends_count, fill = factor(bot))) +
-  geom_histogram(alpha = 0.60)
-
-# that's better
-ggplot(filter(data, friends_count < 2500), 
-       aes(x = friends_count, fill = factor(bot))) +
-  geom_density(alpha = 0.60)
+ggplot(filter(twitter, friends_count < 2500), 
+       aes(x = friends_count, fill = bot)) +
+  geom_histogram() +
+  facet_grid(bot ~.)
 
 # what about account age?
-ggplot(data, aes(x = account_age, fill = factor(bot))) +
-  geom_density(alpha = 0.60)
+ggplot(twitter, aes(x = account_age_hours, fill = bot)) +
+  geom_histogram() +
+  facet_grid(bot ~.)
 
-# geo enabled?
-xtabs(~bot + geo_enabled, data = data)
+# lexical diversity
+ggplot(twitter, aes(x = diversity, fill = bot)) +
+  geom_histogram() +
+  facet_grid(bot ~.)
+
+# what are the average values?
+avg_diversity = 
+  twitter %>%
+    group_by(bot) %>%
+    summarize(avg_diversity = mean(diversity, na.rm = TRUE))
+
+# add it to the plot
+ggplot(twitter, aes(x = diversity, fill = bot)) +
+  geom_histogram() +
+  geom_vline(data = avg_diversity, aes(xintercept = avg_diversity)) + 
+  facet_grid(bot ~.)
 ```
 
-## Logistic regression
+## Feature engineering
 
-Lucky for us, we can use the handy `train()` function for fitting logistic 
-regressions.
+Feature engineering is the process of creating predictor variables using domain
+knowledge. We can test hypotheses about the importance of various relationships
+by creating new predictors that help interrogate those relationships. For example,
+you might hypothesize a relationship between the number of tweets made
+and the lexical diversity that is relevant to model. To test that, make a new
+categorical variable indicating whether an account holder is a 'heavy tweeter', 'medium tweeter'
+or 'light tweeter':
 
-```{r, warning = FALSE, message = FALSE}
+```{r feature-engineering}
+# the number of tweets per account has a long tail
+ggplot(twitter, aes(x = statuses_count)) +
+  geom_histogram()
+
+# break into three categories by quantile
+quantile(twitter$statuses_count)
+
+# low tweeters will be the bottom 25%, 
+twitter$tweet_volume = NA
+twitter$tweet_volume = ifelse(twitter$statuses_count <= 188, 
+                              'Light Tweeter', 
+                              twitter$tweet_volume)
+
+twitter$tweet_volume = ifelse((twitter$statuses_count > 188 & twitter$statuses_count <= 2646), 
+                              'Medium Tweeter', 
+                              twitter$tweet_volume)
+
+twitter$tweet_volume = ifelse(twitter$statuses_count > 2646, 
+                              'Heavy Tweeter', 
+                              twitter$tweet_volume)
+
+twitter$tweet_volume = factor(twitter$tweet_volume, levels = c('Light Tweeter', 'Medium Tweeter', 'Heavy Tweeter'))
+
+# plot it!
+ggplot(twitter, aes(x = statuses_count)) +
+  geom_histogram(aes(fill = tweet_volume), bins = 100)
+
+# update the figure
+avg_diversity = 
+  twitter %>%
+    group_by(bot, tweet_volume) %>%
+    summarize(avg_diversity = mean(diversity, na.rm = TRUE))
+
+ggplot(twitter, aes(x = diversity, fill = bot)) +
+  geom_histogram() +
+  geom_vline(data = avg_diversity, aes(xintercept = avg_diversity)) + 
+  facet_grid(bot ~ tweet_volume)
+```
+
+# Logisitic Regression 
+
+## Training and testing sets
+
+```{r train-test, warning = FALSE, message = FALSE}
 set.seed(243)
-data = na.omit(data)
+twitter = na.omit(twitter)
 
 # select the training observations
-in_train = createDataPartition(y = data$bot,
+in_train = createDataPartition(y = twitter$bot,
                                p = 0.75, # 75% in train, 25% in test
                                list = FALSE)
 
-train = data[in_train, ]
-test = data[-in_train, ]
-
-# drop the ids
-train$id = NULL
-test$id = NULL
+train = twitter[in_train, ]
+test = twitter[-in_train, ]
 ```
+
+## Training logisitic regressions
 
 Check out [this page](http://topepo.github.io/caret/Logistic_Regression.html)
 for more types of logistic regression to try out.
 
-```{r, warning = FALSE}
+```{r logistic-model, warning = FALSE}
 logistic_model = train(bot ~ ., 
-                       data = na.omit(train),  
+                       data = train,  
                        method = 'glm',
-                       family = binomial,
+                       family = binomial, 
                        preProcess = c('center', 'scale'))
 
 summary(logistic_model)
@@ -143,19 +213,29 @@ plot(varImp(logistic_model))
 # test predictions
 logistic_predictions = predict(logistic_model, newdata = test)
 confusionMatrix(logistic_predictions, test$bot)
+```
 
+There are subset selection methods for logistic regression as well. Try out
+`method = 'glmStepAIC'`:
+```{r step-model, message = FALSE, results = 'hide'}
 # stepwise logisitic regression
 step_model = train(bot ~ ., 
-                   data = na.omit(train),  
+                   data = train,  
                    method = 'glmStepAIC',
                    family = binomial,
                    preProcess = c('center', 'scale'))
+```
+
+```{r step-results}
 summary(step_model)
-plot(varImp(step_model))
 
 step_predictions = predict(step_model, newdata = test)
 confusionMatrix(step_predictions, test$bot)
+```
 
+How do the models compare?
+
+```{r compare-models}
 # compare
 results = resamples(list(logistic_model = logistic_model, 
                          step_model = step_model))
@@ -166,6 +246,3 @@ summary(results)
 # plot results
 dotplot(results)
 ```
-
-Now that we have a discrete binary outcome we'll use performance metrics called
-accuracy and kappa instead of $R^2$ and RMSE. 
