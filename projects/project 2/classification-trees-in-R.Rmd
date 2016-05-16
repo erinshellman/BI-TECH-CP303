@@ -1,66 +1,61 @@
 ---
 title: "Classification Trees in R"
-author: "Erin Shellman"
-date: "May 11, 2015"
+date: "May 15, 2016"
 output:
-  pdf_document:
-    toc: yes
-    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache = TRUE, fig.align = 'center', warning = FALSE, 
+                      message = FALSE)
 require(dplyr)
 require(ggplot2)
 require(GGally)
 require(scales)
 require(caret)
 setwd('~/projects/BI-TECH-CP303/projects/project 2')
-data = read.delim('./data/bot_or_not.tsv',
-                   sep = '\t',
-                   header = TRUE)
+twitter = read.delim('./data/bot_or_not.tsv',
+                     sep = '\t',
+                     header = TRUE)
 ```
 
 We'll be working with the same Twitter dataset again this week:
-```{r, eval = FALSE}
+```{r load-data, eval = FALSE}
 library(dplyr)
 library(ggplot2)
 library(scales)
 library(caret)
 
-data = read.delim('bot_or_not.tsv',
+twitter = read.delim('bot_or_not.tsv',
                    sep = '\t',
                    header = TRUE)
 ```
 
 As usual, divide the data into test and train.
-```{r, warning = FALSE, message = FALSE}
+```{r train-test}
 # tell R which variables are categorical (factors)
-data$bot = factor(data$bot)
-data$default_profile = factor(data$default_profile)
-data$default_profile_image = factor(data$default_profile_image)
-data$geo_enabled = factor(data$geo_enabled)
-data$profile_background_tile = factor(data$profile_background_tile)
-data$verified = factor(data$verified)
+twitter$bot = factor(twitter$bot)
+twitter$default_profile = factor(twitter$default_profile)
+twitter$default_profile_image = factor(twitter$default_profile_image)
+twitter$geo_enabled = factor(twitter$geo_enabled)
+
+summary(twitter)
 
 set.seed(243)
-data = na.omit(data)
 
 # select the training observations
-in_train = createDataPartition(y = data$bot,
+in_train = createDataPartition(y = twitter$bot,
                                p = 0.75, # 75% in train, 25% in test
                                list = FALSE)
 
-train = data[in_train, ]
-test = data[-in_train, ]
-
-# drop the ids
-train$id = NULL
-test$id = NULL
+training_set = twitter[in_train, ]
+testing_set = twitter[-in_train, ]
 ```
 
 # Grow one tree
@@ -68,10 +63,12 @@ test$id = NULL
 *caret* has [lots of](http://topepo.github.io/caret/Tree_Based_Model.html) 
 different tree models, so check 'em out. We can make a simple tree model using
 the `rpart` method.
-```{r, warning = FALSE, message = FALSE}
-tree_model = train(factor(bot) ~., 
+
+```{r one-tree}
+tree_model = train(bot ~., 
                    method = 'rpart',
-                   data = train)
+                   data = training_set)
+
 print(tree_model)
 print(tree_model$finalModel)
 plot(varImp(tree_model))
@@ -80,33 +77,29 @@ plot(varImp(tree_model))
 plot(tree_model$finalModel)
 text(tree_model$finalModel, use.n = TRUE, all = TRUE, cex = 0.60)
 
-# we can do better!
-library(rattle)
-fancyRpartPlot(tree_model$finalModel)
-
 # test the predictions
-tree_predictions = predict(tree_model, newdata = test)
-confusionMatrix(tree_predictions, test$bot)
+tree_predictions = predict(tree_model, newdata = testing_set)
+confusionMatrix(tree_predictions, testing_set$bot)
 ```
 
 By default, the train function will try three values of the complexity 
 parameter, but we can tell it to try more using the `tuneLength` argument.
-```{r, warning = FALSE, message = FALSE}
-tree_model = train(factor(bot) ~., 
+
+```{r pruning}
+tree_model = train(bot ~., 
                    method = 'rpart',
-                   data = train, 
+                   data = training_set, 
                    tuneLength = 10)
 print(tree_model)
 print(tree_model$finalModel)
+plot(varImp(tree_model))
+
 # plot accuracy by the complexity parameter
 plot(tree_model)
 
-library(rattle)
-fancyRpartPlot(tree_model$finalModel)
-
 # test the predictions
-tree_predictions = predict(tree_model, newdata = test)
-confusionMatrix(tree_predictions, test$bot)
+tree_predictions = predict(tree_model, newdata = testing_set)
+confusionMatrix(tree_predictions, testing_set$bot)
 ```
 
 # Bootstrap aggregating (bagging)
@@ -115,15 +108,16 @@ You might have to install some extra packages before this one will run. The key
 idea in bagging is that we resample the input data and recompute the 
 predictions. Then, use the average or majority vote to determine the class.
 
-```{r, warning = FALSE}
+```{r bag}
 bagged_model = train(bot ~.,
                     method = 'treebag',
-                    data = train)
-print(bagged_model)
-print(bagged_model$finalModel)
+                    data = training_set)
 
-bagged_predictions = predict(bagged_model, test)
-confusionMatrix(bagged_predictions, test$bot)
+print(bagged_model)
+plot(varImp(bagged_model))
+
+bagged_predictions = predict(bagged_model, testing_set)
+confusionMatrix(bagged_predictions, testing_set$bot)
 ```
 
 In this case, we do get some accuracy gains from bagging.
@@ -132,18 +126,23 @@ In this case, we do get some accuracy gains from bagging.
 
 The key idea of boosting is that we amplify the signal of weak predictors by 
 up-weighting misclassified observations at each split point.
-```{r, warning = FALSE}
+
+```{r boost}
 boost_model = train(bot ~.,
                     method = 'gbm',
-                    data = train,
+                    data = training_set,
                     verbose = FALSE)
+
 print(boost_model)
 plot(boost_model)
+plot(varImp(boost_model))
+
+#TODO: remove this?
 summary(boost_model$finalModel)
 
 # predict
-boost_predictions = predict(boost_model, test)
-confusionMatrix(boost_predictions, test$bot)
+boost_predictions = predict(boost_model, testing_set)
+confusionMatrix(boost_predictions, testing_set$bot)
 ```
 
 # Random Forest
@@ -151,33 +150,34 @@ confusionMatrix(boost_predictions, test$bot)
 Random forest is a bagging method where we resample both obervations, and 
 variables, grow multiple trees and aggregate votes. It's one of the most 
 accurate classifiers, but can be slow. Might want to run this one at home...
-```{r, eval = FALSE}
+
+```{r random-forest}
 rf_model = train(bot ~., 
-                 data = train, 
+                 data = training_set, 
                  method = 'rf',
                  prox = TRUE,
                  verbose = TRUE)
 
 print(rf_model)
-summary(rf_model)
 plot(rf_model)
 plot(rf_model$finalModel)
 
 # pull a tree out of the forest
-getTree(rf_model$finalModel, k = 5)
+head(getTree(rf_model$finalModel, k = 5, labelVar = TRUE))
 
 # predict
-rf_predictions = predict(rf_model, test)
-confusionMatrix(rf_predictions, test$bot)
+rf_predictions = predict(rf_model, testing_set)
+confusionMatrix(rf_predictions, testing_set$bot)
 ```
 
 As always, we can compare the models with the `resamples` function.
 
-```{r}
-# compare
+```{r compare}
+# compare the three methods
 results = resamples(list(tree_model = tree_model, 
                          bagged_model = bagged_model,
-                         boost_model = boost_model))
+                         boost_model = boost_model,
+                         rf_model = rf_model))
 
 # compare accuracy and kappa
 summary(results)
@@ -187,3 +187,19 @@ dotplot(results)
 ```
 
 How do the tree models compare with logistic regression?
+
+# Making prettier trees
+
+If you want to make your trees look a little prettier, try out the `rattle`
+package.
+
+```{r}
+library(rattle)
+
+tree_model = train(bot ~., 
+                   method = 'rpart',
+                   data = training_set)
+
+# plot the final model
+fancyRpartPlot(tree_model$finalModel)
+```
