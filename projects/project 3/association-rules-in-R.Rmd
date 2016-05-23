@@ -337,3 +337,19 @@ plot(subrules,
 # plot a graph
 plot(subrules, method = 'graph')
 ```
+
+# Project 3, Part 1
+
+## Feature engineering
+
+1. Use feature engineering to construct 3 additional variables to include in 
+your association mining.
+
+2. Plot your new features to view their distributions.
+
+## `arules`
+
+3. Mine for rules with data that includes your new features from 1. Filter the 
+rules for your features and describe the patterns you find. **Note:** you might
+need to try different values of support and confidence to generate rules with
+your newly created features.
