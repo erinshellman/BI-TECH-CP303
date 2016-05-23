@@ -1,7 +1,5 @@
 ---
-title: "Association Rule Mining in R"
-author: "Erin Shellman"
-date: "May 18, 2015"
+title: "Association Rule Mining"
 output:
   pdf_document:
     toc: yes
@@ -10,130 +8,256 @@ output:
     theme: readable
     toc: yes
     toc_depth: 3
+date: "May 23, 2016"
 ---
 
 ```{r setup, include = FALSE}
 # my set-up
-knitr::opts_chunk$set(cache = TRUE)
+knitr::opts_chunk$set(cache = TRUE, warning = FALSE, message = FALSE,
+                      fig.align = 'center')
+ 
+options(scipen = 999)
+
 require(dplyr)
 require(ggplot2)
 require(scales)
 require(arules)
 require(arulesViz)
-setwd('~/projects/BI-TECH-CP303/projects/project 3')
-bought = read.transactions('./data/people_who_bought.txt', 
-                           format = 'basket', 
-                           sep = ',')
-catalog = read.delim('./data/product_catalog.tsv',
-                     header = TRUE,
-                     sep = '\t',
-                     quote = '')
-itemInfo(bought) = catalog
+
+colleges = read.delim('./data/colleges.tsv',
+                      sep = '\t',
+                      header = TRUE)
 ```
 
-## Reading in the data
+# Preparing the data
 
-The *arules* package reads in data slightly differently than other packages. 
-Specifically, it has its own `read.transactions` function that can be used to 
-read columns stored as transactions. 
+In project 3 we're working with a new data set from the 
+[College Scorecard](https://collegescorecard.ed.gov/). According to the 
+[data documentation](https://collegescorecard.ed.gov/data/):
+
+> The College Scorecard is designed to increase transparency, putting the power 
+> in the hands of the public — from those choosing colleges to those improving 
+> college quality — to see how well different schools are serving their students.
+
+There are a lot of variables available to us in this data set and we can use
+association mining to discovery trends and patterns.
 
 ```{r, eval = FALSE}
 install.packages('arules', dependencies = TRUE)
 library(arules)
 
-# read in the co-purchased items
-bought = read.transactions('people_who_bought.txt', 
-                           format = 'basket', 
-                           sep = ',')
-
-# read in the product catalog
-catalog = read.delim('product_catalog.tsv',
-                     header = TRUE,
-                     sep = '\t'
-                     quote = '')
+colleges = read.delim('./data/colleges.tsv',
+                      sep = '\t',
+                      header = TRUE)
 ```
 
-The file *people_who_bought.txt* consists of rows of co-purchased items, in the 
-form:
+## Feature engineering
 
-| 0,1,2,3,4,5
-| 1,0,2,4,5,15
-| 2,0,11,12,13,14
-| 3,63,64,65,66,67
+Feature engineering is the process of using domain knowledge or expertise to
+construct new variables for use in data exploration and modeling. In association rule mining, we're looking for associations between *categories* of features, so the inputs all need to be discrete. Many of the variables in your data set are
+already discrete, like `state` or `locale`, but we'll need to use some feature
+engineering to coerce other variables of interest. 
 
-Where each row represents a "transaction." In reality each row corresponds to a 
-product and the set of items that are frequently purchased together with the
-item.
+### `discretize`
 
-Once we've read in the itemsets and the catalog, we can append the catalog data
-to the itemsets. This allows us to do convenient things like aggregate at the 
-product category level.
+The `arules` package provides a function that can help you create discrete
+variables from continuous ones, called `discretize`:
+
+```{r discretize}
+colleges = 
+  colleges %>%
+    mutate(cost_category = discretize(cost))
+
+# the default results in only 3 bins of uneven size
+table(colleges$cost_category)
+
+colleges = 
+  colleges %>%
+    mutate(cost_category = discretize(cost, method = 'frequency', categories = 4))
+
+# that's better
+table(colleges$cost_category)
+```
+
+`discretize` can break your variable up with several different methods, *e.g.* 
+equal interval length, equal frequency, clustering-based, and custom interval 
+discretization. Also you can specify `categories` to get as many or as few as
+you like. See `?discretize` for details.
+
+```{r}
+colleges$earnings_quartiles = discretize(colleges$median_earnings, 
+                                         method = 'frequency', 
+                                         categories = 4,
+                                         labels = c('Q1', 'Q2', 'Q3', 'Q4'))
+
+colleges$debt_quartiles = discretize(colleges$median_debt,
+                                     method = 'frequency', 
+                                     categories = 4,
+                                     labels = c('Q1', 'Q2', 'Q3', 'Q4'))
+```
+
+### SAT performance spread
+
+Let's make a couple new features based on the variables available. I'm curious
+about the spread in student performance at schools, so to investigate that I
+can compute the difference between the top 75% and the bottom 25% of performance
+on the SATs.
+
+```{r}
+# difference between Q3 and Q1.
+colleges = 
+  colleges %>%
+    mutate(sat_verbal_spread = discretize(sat_verbal_quartile_3 - sat_verbal_quartile_1,
+                                          method = 'frequency', 
+                                          categories = 4,
+                                          labels = c('Q1', 'Q2', 'Q3', 'Q4')),
+           sat_math_spread = discretize(sat_math_quartile_3 - sat_math_quartile_1,
+                                        method = 'frequency', 
+                                        categories = 4,
+                                        labels = c('Q1', 'Q2', 'Q3', 'Q4')),
+           sat_writing_spread = discretize(sat_writing_quartile_3 - sat_writing_quartile_1,
+                                           method = 'frequency', 
+                                           categories = 4,
+                                           labels = c('Q1', 'Q2', 'Q3', 'Q4')))
+```
+
+```{r, echo = FALSE, results = 'hide'}
+med_earnings_avg = 
+  colleges %>%
+    group_by(sat_math_spread) %>% 
+    summarize(mean = mean(median_earnings, na.rm = TRUE)) %>%
+    na.omit()
+
+ggplot(na.omit(select(colleges, sat_math_spread, median_earnings)), 
+           aes(x = median_earnings)) +
+  geom_histogram() +
+  geom_vline(data = med_earnings_avg, aes(xintercept = mean), 
+             color = 'red', linetype = 2) +
+  facet_grid(sat_math_spread ~.) +
+  theme_minimal()
+```
+
+### STEM schools
+
+I have a feeling that there are interesting patterns earnings patterns for 
+schools where students primarily study science, technology, engineering, and math
+(STEM) fields. So, I can make a variable indicating whether a school has a large
+proportion of STEM students.
+
+```{r}
+colleges = 
+  colleges %>%
+    mutate(stem_perc = architecture_major_perc + comm_tech_major_perc + 
+                       computer_science_major_perc + engineering_major_perc +
+                       eng_tech_major_perc + bio_science_major_perc + 
+                       math_stats_major_perc,
+           high_stem = ifelse(stem_perc >= 0.30, TRUE, FALSE))
+```
+
+# Generating rules
+
+Before we start association rule mining, we need to select out the columns to 
+mine. Remember, this algorithm works on discrete, categorical data so we need to
+remove or convert numerical columns.
+
+```{r}
+college_features = 
+  colleges %>%
+    select(state, locale, control, pred_deg, historically_black,
+           men_only, women_only, religious, online_only, 
+           earnings_quartiles, debt_quartiles, high_stem, sat_verbal_spread,
+           sat_math_spread, sat_writing_spread)
+```
+
+Then we're going to load our data into a `transaction` object in the `arules`
+package. Each row of `college_features` represents a 'transaction.' 
+
+```{r}
+college_features = as(college_features, 'transactions')
+```
+
+Once our data is a `transaction` object, we can inspect the `itemsets` which are
+just the characteristics corresponding with each college.
+
 ```{r, warning = FALSE}
-# attach the catalog data onto the item-sets 
-itemInfo(bought) = catalog
-
 # view the itemsets
-inspect(bought[1:5])
-summary(bought)
+inspect(college_features[1:5])
+summary(college_features)
 
 # plot the most frequent items
-itemFrequencyPlot(bought, topN = 25)
+itemFrequencyPlot(college_features, topN = 20, cex = 0.70)
 ```
 
-## Exploratory data analysis
+The summary of the data set provides an overview of the most frequent items 
+along with other distributional details. Further, we can see which 
+characteristics are the most common in the data set the `itemFrequencyPlot()`.
 
-We have a new dataset again, so let's explore a bit.
-
-```{r, warning = FALSE}
-# what does the distribution of salesrank look like?
-ggplot(catalog, aes(x = salesrank)) + 
-  geom_histogram() 
-
-# how about by product group?
-ggplot(catalog, aes(x = salesrank)) + 
-  geom_histogram() +
-  facet_wrap(~ group)
-
-# how about average rating?
-ggplot(na.omit(catalog), aes(x = factor(avg_rating))) + 
-  geom_bar() 
-
-# how many items in each product group?
-ggplot(na.omit(catalog), aes(x = factor(group))) + 
-  geom_bar()
-```
-
-## Generating rules
-
-In this data set we have a large catalog and relatively few transactions, which
-means for any given item pairing the support will be relatively small (in this 
-case support = 0.0001).
+Next, use the `apriori()` function to find all rules with a specified minimum 
+support and confidence, *e.g.* support = 0.01 and confidence = 0.6.
 
 ```{r}
 # run the apriori algorithm
-rules = apriori(bought, 
-                parameter = list(sup = 0.0001, conf = 0.0001, target = 'rules'))
+rules = apriori(college_features, 
+                parameter = list(sup = 0.01, conf = 0.6, target = 'rules'))
+
+# print distribution information 
+summary(rules)
+
+items(rules)
+
 # view the rules
 inspect(head(rules))
 
 # sort the rules by lift
-inspect(head(sort(rules, by = 'lift'), 10))
+inspect(head(sort(rules, by = 'lift')))
 
-# filter by LHS to pull out specific product ids
-rules_subset = subset(rules, (lhs %in% c('241')))
-inspect(rules_subset)
-
-# aggregate the rules over the product type
-group_rules = aggregate(rules, itemInfo(bought)$group)
-inspect(group_rules)
-
-# quality
+# view quality metrics
 quality(rules) = cbind(quality(rules), coverage = coverage(rules))
+head(quality(rules))
 ```
 
-Cool, now we have 2,601 rules to work with, but inspecting all of them manually 
-sounds like a nightmare. Lucky for us there's a second package called 
-*arulesViz* that gives us lots of great visualization support.
+The result of mining the colleges data associations between the characteristics 
+expressed in the form of rules. We end up producing 930 such associations, or
+rules. 
+
+For an overview of the rules `summary()` can be used. It shows the number of 
+rules, the most frequent items contained in the left-hand-side and the 
+right-hand-side and their respective length distributions and summary statistics 
+for the quality measures returned by the mining algorithm.
+
+## Increasing rule size with `maxlen`
+
+By default, rules will not exceed 6 objects in size, but you can change that
+length constraint with `maxlen`.
+
+```{r}
+# allow rules to up to size 10
+long_rules = apriori(college_features, 
+                     parameter = list(sup = 0.001, conf = 0.6, 
+                                      target = 'rules', maxlen = 10))
+
+inspect(head(sort(long_rules, by = 'lift'), 2))
+```
+
+## Investigate interesting patterns
+
+It's common for the result of association rule mining to produce a huge amount
+of rules. The `subset()` function can be used to narrow in on the results by
+filtering on characteristics of interest.
+
+For example, let's filter for control=Private for profit to see what is associated with that.
+
+```{r}
+high_earners = subset(rules, subset = rhs %in% 'earnings_quartiles=Q4' & lift > 1)
+
+inspect(head(high_earners, n = 5, by = 'lift'))
+```
+
+# Visualizing with `arulesViz`
+
+The authors of `arules` followed on that package with `arulesViz`, which 
+provides lots of great pre-packaged visualization for exploring your association
+rules.
 
 ```{r, eval = FALSE}
 # arules plot template
@@ -145,6 +269,7 @@ plot(x,
      data,
      control = ...)
 ```
+
 where:
 
   * *x*: is the set of rules to be visualized
@@ -172,20 +297,26 @@ color of the points.
 ```{r}
 plot(rules)
 head(quality(rules))
-
-# there's also an interactive mode
-# plot(rules, interactive = TRUE)
 ```
  
 Another version of the scatter plot called two-key plot. Here support and 
 confidence are used for the x and y-axes and the color of the points indicates 
 the 'order,' *i.e.*, the number of items contained in the rule:
+
 ```{r}
 plot(rules, shading = 'order')
 ```
 
-```{r}
-subrules = rules[quality(rules)$confidence > 0.5]
+We can filter to narrow in on rules of interest:
+
+```{r, results = 'hide', fig.width = 10, fig.height = 10}
+subrules = rules[quality(rules)$confidence > 0.9]
+
+plot(subrules, method = 'grouped')
+plot(subrules, method = 'grouped', control = list(k = 50))
+```
+
+```{r, results = 'hide'}
 plot(subrules, 
      method = 'matrix', 
      measure = 'lift')
@@ -200,10 +331,9 @@ plot(subrules,
      method = 'matrix3D', 
      measure = 'lift', 
      control = list(reorder = TRUE))
+```
 
+```{r, fig.width = 10, fig.height = 10}
 # plot a graph
 plot(subrules, method = 'graph')
-
-# parallel coordinates plot
-plot(subrules, method = 'paracoord', control = list(reorder = TRUE))
 ```
