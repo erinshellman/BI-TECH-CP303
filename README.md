@@ -59,8 +59,8 @@ Week | Date | Topic | Dataset
 4 | April 25 | Flex-time, Logistic regression | Twitter user data: [*bot_or_not.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+2/bot_or_not.tsv)
 5 | May 2 | Classification trees | Twitter user data 
 6 | May 9 | Classification | Twitter user data
-7 | May 16 | Association rules | TBD
-8 | May 23 | Clustering | TBD
+7 | May 16 | Association rules | [*colleges.tsv*](https://s3-us-west-2.amazonaws.com/bi-tech-cp303/project+3/colleges.tsv) 
+8 | May 23 | Clustering |
 9 | June 6 | Sharing your work | None!
 10 | June 13 | Guest panel | None! 
 
