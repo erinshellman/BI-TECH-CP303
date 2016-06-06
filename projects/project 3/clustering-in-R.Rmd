@@ -58,7 +58,7 @@ identify which schools to fund?
 # $k$-means clustering
 
 One approach would be to use $k$-means to identify clusters of schools meeting 
-our granting requirements.
+our granting requirements. 
 
 ```{r}  
 college_features = 
@@ -79,7 +79,10 @@ head(kmeans_cluster$cluster, 10)
 
 # centers
 kmeans_cluster$centers
+```
 
+Now we can plot the clusters and how they relate to two of the variables. Note that the clusters are labeled by numbers as seen in the figure legend.
+```{r}
 # plot 4 clusters
 ggplot(college_features, 
        aes(x = family_income_median, 
@@ -105,12 +108,12 @@ ggpairs(college_features,
         columns = c('first_gen_share', 'poverty_rate', 'family_income_median', 'median_earnings'))
 ```
 
-What schools should we give money to?
+What schools should we give money to? (Use the earlier plot to figure out which cluster number to select.)
 
 ```{r}
 grant_candidates = 
   college_features %>%
-    filter(cluster == 3)
+    filter(cluster == 1)
 ```
 
 # Hierarchical Clustering
