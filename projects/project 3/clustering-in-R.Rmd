@@ -1,13 +1,13 @@
 ---
 title: "Cluster Analysis in R"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     theme: readable
     toc: yes
     toc_depth: 3
-  pdf_document:
-    toc: yes
-    toc_depth: 2
 date: "June 6, 2016"
 ---
 
@@ -40,57 +40,36 @@ colleges = read.delim('./data/colleges.tsv',
                       header = TRUE)
 ```
 
-# Preprocessing
+We're also going to use a couple new libraries, `stringr` and `ggdendro`, so
+go ahead and install those now. You can use the `packages` menu, or the following
+commands:
 
-Most clustering techniques work best when the data are centered and scaled.
-Recall that a variable is centered when you subtract its mean from each 
-observation. A variable is scaled when you divide each observation by 
-the variable standard deviation. When we center and scale a variable, the 
-resulting variable follows a z-distribution with mean = 0 and sd = 1.
-
-```{r}
-# set the seed
-set.seed(100)
-
-# remove rows containing missing data
-#catalog = na.omit(catalog)
+```{r, eval = FALSE}
+install.packages('stringr', dependencies = TRUE)
+install.packages('ggdendro', dependencies = TRUE)
 ```
 
-Before we can scale the data, we need to convert the product group from a factor
-into a numeric value:
+Let's use a realistic application that we might use clustering to solve. Say that
+I work for a granting agency, like the Gates Foundation, and I want to identify
+colleges that have high numbers of low-income, and first generation college 
+attendees because I want to give those colleges additional funding. How should I
+identify which schools to fund?
 
-```{r}
-# convert the group into dummy variables
-# group_dummies = model.matrix(~ factor(sub$group) - 1)
-# colnames(group_dummies) = c('book', 'dvd', 'music', 'video')
+# $k$-means clustering
 
-# append the dummy variables back on and drop the 'group' variable
-# sub = cbind(sub, group_dummies)
-# sub$group = NULL
-
-# scale the data 
-# scaled = as.data.frame(scale(select(sub, -labels)))
-# scaled$labels = sub$labels
-```
-
-# K-means clustering
-
-We have 4 product types, so maybe K = 4 is a good place to start?
+One approach would be to use $k$-means to identify clusters of schools meeting 
+our granting requirements.
 
 ```{r}  
-# restrict the data to numerical variables
-numeric_variables = sapply(colleges, is.numeric)
-
-college_features = colleges[ , numeric_variables]
-
-# remove missing values
-college_features = na.omit(college_features)
-
-id = college_features$id
-college_features$id = NULL
-
+college_features = 
+  colleges %>%
+    select(institution_name, first_gen_share, poverty_rate, 
+           family_income_median, median_earnings) %>% 
+    na.omit() %>%
+    distinct()
+  
 # run k-means clustering
-kmeans_cluster = kmeans(college_features, 4)
+kmeans_cluster = kmeans(select(college_features, -institution_name), 3)
 
 # check what attributes are in the kmeans object
 attributes(kmeans_cluster)
@@ -103,30 +82,98 @@ kmeans_cluster$centers
 
 # plot 4 clusters
 ggplot(college_features, 
-       aes(x = median_debt, 
+       aes(x = family_income_median, 
            y = median_earnings, 
            color = factor(kmeans_cluster$cluster))) +
   geom_point(alpha = 0.50) +
   theme_minimal() 
+```
 
-with(college_features, pairs(select(college_features, engineering_major_perc, median_earnings, family_income_median, median_debt), col = c(1:4)[kmeans_cluster$cluster])) 
+We can use our trusty friend `ggpairs` to visualize the resulting clusters:
+
+```{r}
+require(GGally)
+
+college_features =
+  college_features %>%
+    mutate(cluster = factor(kmeans_cluster$cluster))
+
+ggpairs(college_features, 
+        lower = list(mapping = aes(color = cluster, alpha = 0.20)),
+        diag = list(mapping = aes(fill = cluster, color = cluster, alpha = 0.50)),
+        upper = list(mapping = aes(group = cluster)),
+        columns = c('first_gen_share', 'poverty_rate', 'family_income_median', 'median_earnings'))
+```
+
+What schools should we give money to?
+
+```{r}
+grant_candidates = 
+  college_features %>%
+    filter(cluster == 3)
 ```
 
 # Hierarchical Clustering
 
-```{r}
-# compute the euclidean distance
-euclidean = dist(college_features, method = 'euclidean')
+Can we find similarities in the colleges based on the composition of majors?
 
-# attributes
+```{r, fig.width = 12, fig.height = 12}
+require(stringr)
+require(ggdendro)
+
+# take a sample to readablility
+sample = colleges[sample(nrow(colleges), 50), ]
+
+# select all the columns that contain the string "_major_perc"
+majors = sample[, str_detect(names(sample), '_major_perc')]
+
+# put the institution name back on
+majors$institution_name = sample$institution_name
+
+# remove missing values
+majors = na.omit(majors)
+
+# compute the euclidean distance
+euclidean = dist(select(majors, -institution_name), 
+                 method = 'euclidean')
+
 attributes(euclidean)
 
 # hierarchical clustering
 hier = hclust(euclidean)
 
+attributes(hier)
+
 # label by id
-hier$labels = id
+hier$labels
+hier$labels = majors$institution_name
 
 # plot dendrogram
-plot(hier)
+ggdendrogram(hier, rotate = FALSE, size = 2)
+ggdendrogram(hier, rotate = TRUE, size = 2)
+```
+
+Do the schools we identified as candidates for grants cluster by area of study?
+
+```{r}
+# extract the dendrogram data
+dendro_data = dendro_data(hier)
+
+attributes(dendro_data)
+
+dendro_data$labels = unique(merge(dendro_data$labels, 
+                           select(college_features, institution_name, cluster),
+                           by.x = 'label',
+                           by.y = 'institution_name',
+                           all.x = TRUE))
+
+ggplot(segment(dendro_data)) +
+  geom_segment(aes(x = x, y = y, xend = xend, yend = yend)) +
+  geom_text(data = label(dendro_data),
+            aes(label = label, x = x, y = 0, hjust = 0, color = cluster),
+            size = 2) +
+  coord_flip() +
+  scale_y_reverse(expand = c(0.25, 0)) +
+  theme_minimal() + 
+  theme(legend.position = 'bottom')
 ```
