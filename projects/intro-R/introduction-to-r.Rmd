@@ -1,5 +1,6 @@
 ---
-title: 'Introduction to R: making visuals and exploratory data analysis'
+title: 'Introduction to R'
+subtitle: 'Visualization and exploratory data analysis'
 output:
   pdf_document:
     toc: yes
@@ -8,7 +9,7 @@ output:
     theme: readable
     toc: yes
     toc_depth: 3
-date: "April 4, 2016"
+date: "`r format(Sys.time(), '%d %B %Y')`"
 ---
 
 ```{r setup, include = FALSE}
@@ -19,9 +20,9 @@ require(dplyr)
 require(ggplot2)
 require(GGally)
 
-data = read.delim('./data/bikeshare_2015.tsv',
-                  header = TRUE,
-                  sep = '\t')
+ff = read.delim('~/projects/BI-TECH-CP303/datasets/forest_fires.tsv',
+                header = TRUE,
+                sep = '\t')
 ```
 
 # Preparation 
@@ -41,8 +42,9 @@ programming, or all three please keep in mind:
 That's sage advice from 
 [Hadley Wickham](http://www.r-bloggers.com/hadley-wickhams-dplyr-tutorial-at-user-2014-part-1/), 
 a statistician and software developer who has revolutionized the way that people 
-analyze data with R. We're going to use many of his packages in this class, 
-and you'll be a pro in no time.
+analyze data with R. We're going to use many of his packages in this class to 
+solve complex problems and at times it might be frustrating, but you'll be a pro
+in no time.
 
 # R Basics
 
@@ -65,10 +67,12 @@ You can type things like this right into R:
 
 ```{r calculator examples}
 23 + 45
+
+# define a variable called 'value'
 value = (4.59 / 0.1)^3
 print(value)
 
-# the coolest part is that R will do these operations element-wise on vectors
+# R will even do these operations element-wise on vectors!
 vector1 = c(1, 2, 3, 4)
 vector2 = c(2, 2, 2, 2) # 'c' is short for 'c'oncatenate
 
@@ -281,7 +285,7 @@ In that case you can define your own functions.
 
 ```{r udf}
 # make input
-my_friends = c('Bryan', 'Gary', 'Wendy', 'Uncle Brian', 'Bernease')
+my_friends = c('Gary', 'Wendy', 'Uncle Brian')
 
 # define function
 say_hi = function(names) {
@@ -307,14 +311,14 @@ you can get away with always copying/pasting this:
 # set your working directory - normally where you data are
 setwd('path/to/your/data')
 
-data = read.delim('data.file',
-                  header = TRUE,
-                  sep = '\t')
+df = read.delim('data.file',
+                header = TRUE,
+                sep = '\t')
 
 # you could also specify the complete path 
-data = read.delim('path/to/your/data/data.file',
-                  header = TRUE,
-                  sep = '\t')
+df = read.delim('path/to/your/data/data.file',
+                header = TRUE,
+                sep = '\t')
 ```
 
 Type `?read.delim` to learn what the `header` and `sep` arguments do.
@@ -657,7 +661,6 @@ visualizations that answer the following:
 3. What is the relationship between horsepower and MPG, and is that relationship 
 modified by the number of cylinders?
 
-
 # Aggregation and summarization with *dplyr*
  
 ## What is *dplyr*
@@ -800,14 +803,14 @@ Return to the `mtcars` data set we used previously. Get used to coding with the 
 
 # Exploratory data analysis
 
-## Capital Bikeshare data
+## Forest fires data
 
 The *mtcars* and *diamonds* data sets were a good warm-up, but let's dive into 
-the data you'll be working with in the first project. The data are from Washington
+the data you'll be working with in the first project. TODO: UPDATE. The data are from Washington
 D.C.'s bikeshare program in 2015 and are in the file [*bikeshare_2015.tsv*](https://github.com/erinshellman/BI-TECH-CP303/blob/master/projects/intro-R/bikeshare_2015.tsv) in the course repository. 
 
 ```{r EDA data-read-in, eval = FALSE}
-data = read.delim('/your/dir/bikeshare_2015.tsv',
+data = read.delim('/your/dir/forest_fires.tsv',
                   header = TRUE,
                   sep = '\t')
 ```
