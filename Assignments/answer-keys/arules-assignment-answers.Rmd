@@ -1,0 +1,134 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, include = F}
+library(dplyr)
+library(ggplot2)
+library(arules)
+
+colleges = read.delim("../colleges.tsv", sep = '\t', header = TRUE)
+```
+
+# Unsupervised Learning I: Association Rules - Answers
+
+## Instructions
+
+Follow the steps below to construct association rules with the arules package and the colleges data set.
+
+1. Read in the data using the `read.delim` function. Then use `ggplot2`, `ggpairs`, and `dplyr` to identify interesting relationships in the data. Write a short description of one interesting pattern you identified.
+
+*This is entirely exploratory so investigate any relationships you might be interested in. Below we look at the federal loan rate vs top ten school status among universities that grant graduate degrees.*
+
+```{r, eval = F, messsage = F, warning = F, comment = F}
+library(dplyr)
+library(ggplot2)
+library(arules)
+
+### Load the colleges datasets on your machine
+### colleges = read.delim("colleges.tsv", sep = '\t', header = TRUE)
+
+```
+
+```{r}
+graduate_universities = colleges %>%
+  filter(highest_degree == "Graduate degree" )
+
+ggplot(graduate_universities, aes(x = top_ten, y = federal_loan_rate)) +
+  geom_boxplot()
+
+```
+
+\clearpage
+
+2. Prepare your data for association rule mining by transforming it into a set of transactions. Use the inspect and summary functions to view the transactions.
+
+```{r}
+
+colleges$cost_quartiles = discretize(colleges$cost,
+                                     method = "frequency", categories = 4, 
+                                     labels = c("cost_Q1", "cost_Q2", "cost_Q3", "cost_Q4"))
+
+colleges$earnings_quartiles = discretize(colleges$median_earnings,
+                                         method = "frequency", categories = 4, 
+                                         labels = c("earnings_Q1", "earnings_Q2", "earnings_Q3", "earnings_Q4"))
+
+colleges$debt_quartiles = discretize(colleges$median_debt,
+                                     method = "frequency", categories = 4, 
+                                     labels = c("debt_Q1","debt_Q2", "debt_Q3", "debt_Q4"))
+
+colleges = colleges %>%
+  mutate(stem_perc = architecture_major_perc + comm_tech_major_perc + 
+           computer_science_major_perc + engineering_major_perc + eng_tech_major_perc +
+           bio_science_major_perc + math_stats_major_perc,
+         high_stem = ifelse(stem_perc >= 0.3, TRUE, FALSE))
+
+college_features = colleges %>% 
+  select(locale, control, pred_deg, historically_black, men_only,
+         women_only, religious, online_only, earnings_quartiles,
+         debt_quartiles, cost_quartiles, high_stem, top_ten)
+
+college_trans = as(college_features, "transactions")
+
+inspect(college_trans[1:3])
+
+summary(college_trans)
+
+```
+
+\clearpage
+
+3. Generate rules with the apriori function with a support of 0.01 and a confidence of 0.60. 
+
+```{r}
+rules = apriori(college_trans, parameter = list(sup = 0.01, conf = 0.6, target = "rules"))
+
+```
+
+\clearpage
+
+4. Try the following combinations of support and confidence: [0.10, 0.60], [0.01, 0.10]. What happens to the number of rules as the support increases? (**Hint:** use the summary function to see the number of rules).
+
+*A support of 0.1 and confidence of 0.6 is very restrictive compared to the other a priori settings, with only 20 rules meeting the requirements.* 
+
+```{r}
+rules4a = apriori(college_trans, parameter = list(sup = 0.1, conf = 0.6, target = "rules"))
+rules4b = apriori(college_trans, parameter = list(sup = 0.01, conf = 0.1, target = "rules"))
+
+
+summary(rules)
+summary(rules4a)
+summary(rules4b)
+
+```
+
+
+```{r}
+rules3 = apriori(college_trans, parameter = list(sup = 0.01, conf = 0.6, target = "rules"))
+
+```
+
+\clearpage
+
+5. In the text we constructed earnings quartiles and explored the associations in top earners by filtering the rules for the top quartile of earners. Now, re-filter the rules to explore the bottom 25% of earners (Q1). Report at least 1 interesting finding. **Hint:** Use the subset and inspect functions to filter the left-hand side (lhs) for `earnings_quartiles=earnings_Q1`. When using filter here, do not add spaces to the categories, for example "earnings_quartiles = Q1" will not work.
+
+*There are not rhs rules with this subset using the support and confidence restrictions in the tutorial. There were 85 rules with this low earnings quartile on the lhs. I noticed that "control=Private for-profit" was common on the rhs when inspecting these rules. After subsetting on "control=Private for-profit" on the rhs too, there were 42 rules, about 50% of the total rules with low earning quartile on the lhs.* 
+
+```{r}
+
+low_earners = subset(rules, subset = lhs %in% "earnings_quartiles=earnings_Q1")
+low_earners
+
+inspect(head(low_earners))
+
+
+low_earners_for_profit =  subset(rules, subset = lhs %in% "earnings_quartiles=earnings_Q1" &
+                                   rhs %in% "control=Private for-profit")
+low_earners_for_profit
+
+
+```
+
+
