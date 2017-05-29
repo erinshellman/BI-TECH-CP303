@@ -1,0 +1,78 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r, include = F}
+library(tidyverse)
+ff = read.delim("../forestfires.tsv", sep = '\t', header = TRUE)
+
+library(caret)
+
+```
+
+
+#  Creating a machine learning analysis plan
+
+## Instructions
+
+If you haven't already, download [`forestfires.tsv data`](https://canvas.uw.edu/courses/1105384/files/39712993) and [documentation](https://canvas.uw.edu/courses/1105384/files/39712997/download?wrap=1). Use the `caret` package to prepare the forest fire data for a machine learning analysis. When you finish preparing the data, save your script and upload it to Canvas.
+
+```{r, eval = F}
+library(caret)
+
+### Load the forest fires datasets on your machine by setting the working directory 
+### or specify the directory of your data 
+
+### This code is commented out and will NOT run
+### ff = read.delim("forestfires.tsv", sep = '\t', header = TRUE)
+
+```
+
+\clearpage
+
+1. Make at least one new feature and plot it against the burn area. From visual inspection does there appear to be a relationship between the new feature and the burn area?
+
+```{r, fig.height=3, fig.width=3}
+
+ff$is_weekend = ifelse(ff$day %in% c("sat", "sun"), 1, 0)
+ff$is_weekend = factor(ff$is_weekend)
+
+ff$log_area = log(ff$area + 1)
+
+ggplot(ff, aes(x = is_weekend, y = area)) +
+  geom_boxplot()
+
+ggplot(ff, aes(x = is_weekend, y = log_area)) +
+  geom_boxplot()
+
+```
+
+*Since the area variable is so skewed, it is easier to see relationships on the log scale (second plot). The relationship between `is_weekend` and burn area is not overwhelming but the median is lower on weekend. There is also a ggpairs plot of the `is_weekend` variable in the tutorial.*
+  
+  
+\clearpage
+
+2. Use `createDataPartition` to split 80% of the forest fire data into a training set.
+
+```{r}
+in_train = createDataPartition(y = ff$log_area, p = 0.8, list = FALSE)
+ff_train = ff[in_train, ]
+ff_test = ff[-in_train, ]
+```
+
+
+3. Use `preProcess` to prepare your data for analysis. What, if any, variables were removed for near zero variance? 
+
+*One variable (`rain`) is removed. Following the tutorial, using the `model.matrix` method helps find other near zero variance categories in the factor variables.*
+
+```{r}
+preprocess_steps = preProcess(select(ff_train, FFMC, DMC, DC, ISI, temp, RH, wind, rain),
+                              method = c("center", "scale", "nzv"))
+
+preprocess_steps
+
+nearZeroVar(ff_train, saveMetrics = TRUE)
+
+```

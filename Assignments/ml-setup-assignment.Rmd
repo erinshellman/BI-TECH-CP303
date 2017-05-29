@@ -1,0 +1,16 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+#  Creating a machine learning analysis plan
+
+## Instructions
+
+If you haven't already, download [`forestfires.tsv data`](https://canvas.uw.edu/courses/1105384/files/39712993) and [documentation](https://canvas.uw.edu/courses/1105384/files/39712997/download?wrap=1). Use the `caret` package to prepare the forest fire data for a machine learning analysis. When you finish preparing the data, save your script and upload it to Canvas.
+
+1. Make at least one new feature and plot it against the burn area. From visual inspection does there appear to be a relationship between the new feature and the burn area?
+    
+2. Use `createDataPartition` to split 80% of the forest fire data into a training set.
+
+3. Use `preProcess` to prepare your data for analysis. What, if any, variables were removed for near zero variance? 

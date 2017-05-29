@@ -26,7 +26,7 @@ library(ggplot2)
 library(GGally)
 
 ### Load the forest fires datasets on your machine by setting the working directory 
-### or specificy the directory of your data 
+### or specify the directory of your data 
 
 ### This code is commented out and will NOT run
 ### ff = read.delim("forestfires.tsv", sep = '\t', header = TRUE)
