@@ -5,7 +5,9 @@ output:
 ---
 
 ```{r, include = F}
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
 colleges = read.delim("../colleges.tsv", sep = '\t', header = TRUE)
 ```
 
@@ -20,7 +22,8 @@ colleges = read.delim("../colleges.tsv", sep = '\t', header = TRUE)
     **A.** Replicate this analysis using the code in the tutorial to generate those 3 clusters and append the cluster levels to the `college_features` dataset.
 
     ```{r, eval = F, messsage = F, warning = F, comment = F}
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
     ```
 
     ```{r, eval = T, messsage = F, warning = F, comment = F}

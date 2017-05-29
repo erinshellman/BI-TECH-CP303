@@ -1,0 +1,60 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+```{r, include = F}
+library(dplyr)
+library(ggplot2)
+library(GGally)
+library(caret)
+
+default = read.delim("credit_card_default.tsv", sep = "\t", header = TRUE)
+```
+
+# Predicting credit card defaults with logistic regression
+
+## Introduction
+
+With credit card balances reaching an average of $16,000 per household and student loans becoming the largest source of household debt, it's clear that Americans are financing many aspects of their lives. For credit card lenders interesting in mitigating loses from risky borrowers, the desire to build models that identify high-risk borrowers has never been stronger.
+
+In this lesson and the next, you'll construct predictive models to identify credit customers who are likely to default on their next payment. In this lesson, you'll create logistic regression models, and next time decision trees.
+
+## Data
+
+The data come from Taiwanese credit card customers. Use the str (structure) and summary functions to familiarize yourself with the data. There are 23 features and one outcome variable default_next_month, which is a binary variable indicating whether the customer will default in the following month. See the feature definitions in the table below and read more about the [Default of Credit Card Clients Data Set](https://archive.ics.uci.edu/ml/datasets/default+of+credit+card+clients).
+
+```{r}
+str(default)
+```
+
+| Predictor        | Description |
+| ---------------------- |:-----------------------------------------------:| 
+default_payment_next_month |	Will the customer default next month (Yes = 1, No = 0)? |
+limit_bal |	Household credit limit |
+sex |	1 = male; 2 = female |
+education	| 1 = graduate school; 2 = university; 3 = high school; 4 = others|
+marriage | 1 = married; 2 = single; 3 = divorced, 0 = others|
+age	| years|
+pay_april - pay_sept |	Payment status from the previous 6 months (April - Sept. 2006). |
+| | -2 = No consumption; -1 = Paid in full; 0 = The use of revolving credit; 1 = payment delay for one month; 2 = payment delay for two months; ... ; 8 = payment delay for eight months; 9 = payment delay for nine months and above.|
+bill_april - bill_sept |	Bill statement amount from the previous 6 months (April - Sept. 2006). |
+pay_amt_april - pay_amt_sept |	Previous payment amount from the previous 6 months (April - Sept. 2006)|
+
+## Instructions
+
+Follow the steps below to familiarize yourself with the credit card default data set and prepare it for a machine learning analysis. You’ll start by building a classifier using logistic regression and continue the model building in the next lesson.
+
+
+1. Read in the data using the `read.delim` function. Then use `ggplot2`, `ggpairs`, and `dplyr` to identify interesting relationships in the data. Write a short description of one interesting pattern you identified.
+
+2. Construct at least one new feature to include in model development. You might choose to create a new feature based on your findings from the exploratory data analysis. Plot the new variable and interpret the result. Use color to a facet to show the relationship between your new feature and the outcome variable `default_next_month`.
+
+3. Use the `createDataPartition` function from the `caret` package to split the data into a training and testing set. Pre-process the data with `preProcess` as needed.
+
+4. Fit at least 3 logistic regression models.
+
+5. Use the `dotplot` function to compare the accuracy of the models you constructed in 4. Which model performed the best in terms of predictive accuracy?

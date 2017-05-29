@@ -5,11 +5,11 @@ output:
 ---
 
 ```{r, include = F}
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 ff = read.delim("../forestfires.tsv", sep = '\t', header = TRUE)
 
-library(tidyverse)
-library(ggplot2)
+
 library(GGally)
 
 ```
@@ -21,7 +21,7 @@ library(GGally)
 Download [`forestfires.tsv data`](https://canvas.uw.edu/courses/1105384/files/39712993) and [documentation](https://canvas.uw.edu/courses/1105384/files/39712997/download?wrap=1), then use `dplyr` verbs and `ggplot2`/`ggpairs` visualizations to conduct an exploratory data analysis on the forest fires data set. Start by answering the following questions, and then pursue what interests you on your own. Submit a document with your answers, brief explanations, and any relevant figures.
 
 ```{r, eval = F}
-library(tidyverse)
+library(dplyr)
 library(ggplot2)
 library(GGally)
 

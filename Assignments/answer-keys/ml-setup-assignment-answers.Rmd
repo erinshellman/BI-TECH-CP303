@@ -5,7 +5,9 @@ output:
 ---
 
 ```{r, include = F}
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
 ff = read.delim("../forestfires.tsv", sep = '\t', header = TRUE)
 
 library(caret)
@@ -21,6 +23,8 @@ If you haven't already, download [`forestfires.tsv data`](https://canvas.uw.edu/
 
 ```{r, eval = F}
 library(caret)
+library(dplyr)
+library(ggplot2)
 
 ### Load the forest fires datasets on your machine by setting the working directory 
 ### or specify the directory of your data 
